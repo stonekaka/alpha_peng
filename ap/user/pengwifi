@@ -1,0 +1,20 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006 OpenWrt.org
+
+START=99
+#BIN=/ezwrt/ezwrt_daemon.lua
+BIN=/ezwrt/dmwatch
+RUN_D=/var/run
+#PID_F=$RUN_D/$BIN.pid
+
+start() {
+	rmmod pengwifi
+	insmod /lib/modules/pengwifi.ko	
+	killall pwf
+	pwf 60.206.36.144 --port=8080 -f &
+}
+
+stop() {
+	echo ""
+}
+

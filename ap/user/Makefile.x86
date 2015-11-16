@@ -1,0 +1,8 @@
+#export STAGING_DIR=/home/op/attitude_adjustment/staging_dir
+#include ../../../../libwebsockets/env.mk
+CFLAGS+=-Wall -DLWS_NO_EXTENSIONS
+
+all:
+#	${CC} ${CFLAGS} -o nlcli cli.c
+	${CC} ${CFLAGS} -DLWS_NO_EXTENSIONS -L${LIB_DIR} -L. -lwebsockets -lssl -lcrypto -I${INCLUDE_DIR} -I../../../../libwebsockets/ -o t test-client.c
+#	${CC} ${CFLAGS} -DLWS_NO_EXTENSIONS -L${LIB_DIR} -L. -lwebsockets -lssl -lcrypto -I${INCLUDE_DIR} -I../../../../libwebsockets/ -o tp test-ping.c
