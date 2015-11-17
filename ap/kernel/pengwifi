@@ -18,6 +18,7 @@ start() {
 	/etc/init.d/network restart
 	/etc/init.d/firewall restart
 	/etc/init.d/dhcp restart
+	ebtables -t broute -A BROUTING -p IPv4 --ip-protocol 6 --ip-destination-port 80 -j redirect --redirect-target ACCEPT
 	rmmod pengwifi
 	insmod /lib/modules/pengwifi.ko	
 	killall pwf
