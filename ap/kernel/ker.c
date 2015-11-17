@@ -34,7 +34,11 @@ void sendnlmsg(void * message, int len);
 #endif
 static int pid; // user process pid
 static struct sock *nl_sk = NULL;
+#ifdef KER_TEST
+int g_ap_flag = 1;
+#else
 int g_ap_flag = 0;
+#endif
 int g_bridge_mode = 1;
 rwlock_t g_table_lock;
 struct hlist_head sta_table[STA_HASH_SIZE];
@@ -522,20 +526,21 @@ unsigned int dmsniff(
 	}else if(FLAG_DROP == result){
 		//goto dm_drop;
 	}else if(FLAG_PORTAL == result){
-		
-		/*ip_portal1 = in_aton("211.161.127.27");
+#ifdef KER_TEST	
+		__be32 ip_portal1, ip_portal2, ip_portal3;
+		ip_portal1 = in_aton("211.161.127.27");
 		ip_portal2 = in_aton("118.144.162.16");
 		ip_portal3 = in_aton("118.144.162.15");
 		if (ip_portal1 == iph->daddr ||
 			ip_portal2 == iph->daddr ||
 			ip_portal3 == iph->daddr){
 			goto dm_accept;
-		}*/
-		
+		}
+#else		
 		if(DST_ALLOW == is_dst_portal(iph->daddr)){
 			goto dm_accept;
 		}
-
+#endif
 		//sendnlmsg("--kernel--:  portal");
 		dm_nat_http_packet(hooknum, skb, eh->h_source);
 	}

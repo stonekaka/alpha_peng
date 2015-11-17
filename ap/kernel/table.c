@@ -46,21 +46,21 @@ int add_sta(struct sta_info *sta)
 	head = &sta_table[get_sta_hash(sta->mac)];
 	//printk(KERN_ALERT"mac=%02x:%02x:%02x:%02x:%02x:%02x,hash=%d", sta->mac[0],sta->mac[1],sta->mac[2],sta->mac[3],sta->mac[4],sta->mac[5],get_sta_hash(sta->mac));
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,38)
-	hlist_for_each_entry_rcu(node, head, hlist) {printk(KERN_ALERT"%d\n", __LINE__);
+	hlist_for_each_entry_rcu(node, head, hlist) {
 #else
 	hlist_for_each_entry_rcu(node, pos, head, hlist) {
 #endif
-		if(0 == memcmp(sta->mac, node->mac, ETH_ALEN)) {printk(KERN_ALERT"%d\n", __LINE__);
-			hlist_del_rcu(&node->hlist);printk(KERN_ALERT"%d\n", __LINE__);
-			if(node) {printk(KERN_ALERT"%d\n", __LINE__);
-				kfree(node);printk(KERN_ALERT"%d\n", __LINE__);
+		if(0 == memcmp(sta->mac, node->mac, ETH_ALEN)) {
+			hlist_del_rcu(&node->hlist);
+			if(node) {
+				kfree(node);
 				//node = NULL;printk(KERN_ALERT"%d\n", __LINE__);
 			}
 		}
-	}printk(KERN_ALERT"%d\n", __LINE__);
+	}
 		
 	hlist_add_head_rcu(&sta->hlist, head);	
-	write_unlock(&g_table_lock);printk(KERN_ALERT"%d\n", __LINE__);
+	write_unlock(&g_table_lock);
 
 #if 1
 	int i ;
@@ -71,9 +71,9 @@ int add_sta(struct sta_info *sta)
 #else
 		hlist_for_each_entry_rcu(node, pos, head, hlist) {
 #endif
-			printk(KERN_ALERT"hash=%d, mac=%02x:%02x:%02x:%02x:%02x:%02x, ip=%d.%d.%d.%d\n", 
+			printk(KERN_ALERT"hash=%d, mac=%02x:%02x:%02x:%02x:%02x:%02x, ip=%d.%d.%d.%d, dev=%s\n", 
 				i, node->mac[0],node->mac[1],node->mac[2],node->mac[3],node->mac[4],node->mac[5],
-				 NIPQUAD(node->ipaddr));
+				 NIPQUAD(node->ipaddr), node->ifname);
 		}
 	}
 #endif 

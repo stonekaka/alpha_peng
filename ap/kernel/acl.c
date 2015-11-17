@@ -232,7 +232,8 @@ unsigned int dmacl(
 			if((node->state == STATE_AUTHED) || (node->state == STATE_IN_WHITE)){
 				ret = NF_ACCEPT;	
 			}else if(node->state == STATE_IN_PORTAL){
-				/*__be32 ip_portal1, ip_portal2, ip_portal3;
+#ifdef KER_TEST
+				__be32 ip_portal1, ip_portal2, ip_portal3;
 				ip_portal1 = in_aton("211.161.127.27");
 				ip_portal2 = in_aton("118.144.162.16");
 				ip_portal3 = in_aton("118.144.162.15");
@@ -240,11 +241,12 @@ unsigned int dmacl(
 					ip_portal2 == iph->daddr ||
 					ip_portal3 == iph->daddr){
 					ret = NF_ACCEPT;
-				}*/
+				}
+#else				
 				if(DST_ALLOW == is_dst_portal(iph->daddr)){
 					ret = NF_ACCEPT;
 				}
-
+#endif
 			}
 			break;
 		}

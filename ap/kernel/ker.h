@@ -31,6 +31,7 @@
 #include <net/sock.h>
 #include <linux/jhash.h>
 
+#define KER_TEST 1
 
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,31)
 #include <linux/spinlock_types.h>
@@ -56,6 +57,10 @@
 #define ANCHOR_HASH  13
 #define STA_BW_ANCHOR_HASH  13
 #define DN_BW_ANCHOR_HASH  234
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,23)
+#define ANCHOR_HASH  184
+#define STA_BW_ANCHOR_HASH  184
+#define DN_BW_ANCHOR_HASH  155
 #else
 #define ANCHOR_HASH  194
 #define STA_BW_ANCHOR_HASH  13
