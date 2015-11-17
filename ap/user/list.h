@@ -18,6 +18,8 @@
 typedef struct _msgdata{
 	char msg[4096];
 	int consumed;
+	int trys;
+#define MSGDATA_MAX_TRYS 3
 	int key;
 	struct _msgdata *next;
 }msgdata;

@@ -34,7 +34,7 @@ void sendnlmsg(void * message, int len);
 #endif
 static int pid; // user process pid
 static struct sock *nl_sk = NULL;
-int g_ap_flag = 1;
+int g_ap_flag = 0;
 int g_bridge_mode = 1;
 rwlock_t g_table_lock;
 struct hlist_head sta_table[STA_HASH_SIZE];
@@ -303,11 +303,11 @@ static int dm_nat_http_packet(unsigned int hooknum, struct sk_buff * skb, unsign
 	memset(&range, 0, sizeof(struct nf_nat_ipv4_range));
 #endif
 
-	iph = ip_hdr(skb);if(iph && iph->protocol != IPPROTO_ICMP)printk(KERN_ALERT"%d, proto=%d\n", __LINE__, iph?iph->protocol:-1);
-	if(iph && iph->protocol == IPPROTO_TCP) {printk(KERN_ALERT"%d\n", __LINE__);
+	iph = ip_hdr(skb);//if(iph && iph->protocol != IPPROTO_ICMP)printk(KERN_ALERT"%d, proto=%d\n", __LINE__, iph?iph->protocol:-1);
+	if(iph && iph->protocol == IPPROTO_TCP) {//printk(KERN_ALERT"%d\n", __LINE__);
 
 		tcph = (struct tcphdr *)((char*)iph + iph->ihl*4);
-		if(tcph && tcph->dest == htons(80)) {printk("8080808080 %d\n", __LINE__);
+		if(tcph && tcph->dest == htons(80)) {//printk("8080808080 %d\n", __LINE__);
 
 #if 0
 			in4_pton("192.168.10.1", strlen("192.168.10.1"), 
@@ -330,9 +330,9 @@ static int dm_nat_http_packet(unsigned int hooknum, struct sk_buff * skb, unsign
 			range.min_ip = range.max_ip = s4.s_addr;
 			range.min.tcp.port = range.max.tcp.port = htons(PORTAL_PORT);
 #endif
-			ct = nf_ct_get(skb, &ctinfo);printk("%d\n", __LINE__);
+			ct = nf_ct_get(skb, &ctinfo);//printk("%d\n", __LINE__);
 			NF_CT_ASSERT(ct != NULL &&
-				(ctinfo == IP_CT_NEW || ctinfo == IP_CT_RELATED));printk("%d\n", __LINE__);
+				(ctinfo == IP_CT_NEW || ctinfo == IP_CT_RELATED));//printk("%d\n", __LINE__);
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,36)
 			//if(ct && !nf_nat_initialized(ct, IP_NAT_MANIP_DST)){printk("%d\n", __LINE__);
 			if(ct){printk("%d\n", __LINE__);
@@ -397,6 +397,10 @@ unsigned int dmsniff(
 		}
 	}
 
+	if(skb->dev && (0 == strncmp(skb->dev->name, "lo", 2))) {
+		return NF_ACCEPT;
+	}
+
 	eh = eth_hdr(skb);
 	if(!eh) {
 		return NF_ACCEPT;
@@ -444,7 +448,7 @@ unsigned int dmsniff(
 	}
 	
 	if(0 == strncmp(idev->name, "eth", 3)){
-		//return NF_ACCEPT;
+		return NF_ACCEPT;
 	}
 
 	/*start sta check*/	

@@ -132,6 +132,11 @@ int set_ap_online(int flag)
     int state_smg = 0;
 	int len = 0;
 
+	if(!nl_sock_fd.ready){
+		LOG_INFO("Error: sock not ready\n");
+		return -1;
+	}
+
 	len = sizeof(struct msg_to_ker) + sizeof(int);
 	m = (struct msg_to_ker *)malloc(len);
 	if(!m){
@@ -165,7 +170,7 @@ void *pthread_netlink(void *arg)
 
 	LOG_INFO("%s start\n", __FUNCTION__);
 	
-	nl_type = NETLINK_PENGWIFI;printf("-----------------------=======================%d\n", __LINE__);
+	nl_type = NETLINK_PENGWIFI;
 
     // Create a socket
     nl_sock_fd.fd = socket(AF_NETLINK, SOCK_RAW, nl_type);
@@ -177,16 +182,17 @@ void *pthread_netlink(void *arg)
     // To prepare binding
     memset(&msg,0,sizeof(msg));
     memset(&src_addr, 0, sizeof(src_addr));
-    src_addr.nl_family = AF_NETLINK;printf("%d\n", __LINE__);
+    src_addr.nl_family = AF_NETLINK;
     src_addr.nl_pid = getpid(); // self pid
     src_addr.nl_groups = 0; // multi cast
 
-    retval = bind(nl_sock_fd.fd, (struct sockaddr*)&src_addr, sizeof(src_addr));printf("%d\n", __LINE__);
-    if(retval < 0){printf("%d\n", __LINE__);
+    retval = bind(nl_sock_fd.fd, (struct sockaddr*)&src_addr, sizeof(src_addr));
+    if(retval < 0){
         LOG_INFO("bind failed: %s", strerror(errno));
         close(nl_sock_fd.fd);
         return NULL;
-    }else{printf("%d\n", __LINE__);
+    }else{
+        LOG_INFO("nl sock bind success.\n");
 		nl_sock_fd.ready = true;
 	}
 

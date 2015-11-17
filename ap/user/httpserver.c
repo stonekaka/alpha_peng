@@ -30,6 +30,7 @@
 #define HTTP_PORT 8012
 #define MAX_CONNECTION 200
 
+extern int g_state;
 extern char g_acname[];
 extern struct ssid_dev g_ssid_dev[];
 extern char g_ap_label_mac_nocol[];
@@ -98,13 +99,17 @@ int get_ssid_portal_by_dev(char *ssid, int slen, char *portal, int plen, char *d
 	}
 
 	for(i = 0; i < MAX_WLAN_COUNT; i++){
-		//printf("%s: %d: compare: %s %s\n", __FUNCTION__, i, g_ssid_dev[i].dev, dev);
+		printf("%s: %d: compare: -%s- -%s-\n", __FUNCTION__, i, g_ssid_dev[i].dev, dev);
 		if(0 == strcmp(g_ssid_dev[i].dev, dev)){
 			snprintf(ssid, slen, "%s", g_ssid_dev[i].ssid);
 			snprintf(portal, plen, "%s", g_ssid_dev[i].portal_url);
-			//printf("%s: dev=%s, ssid=%s\n", __FUNCTION__, dev, ssid);
+			printf("%s: get dev=%s, ssid=%s, portal_url=%s\n", __FUNCTION__, dev, ssid, portal);
 			break;
 		}
+	}
+
+	if(!portal[0]){ //must have portal, avoid redirect loop
+		snprintf(portal, plen, "%s", g_ssid_dev[0].portal_url);
 	}
 
 	return 0;
@@ -165,6 +170,12 @@ void * pthread_httpserver(void *arg)
 
 	signal(SIGCHLD, sighandle);
 	while(1) {
+
+		if(AP_RUNNING != g_state){
+			sleep(3);
+			continue;
+		}
+
 		unsigned int clientlen = sizeof(client_addr);
 		if((client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &clientlen)) < 0){
 			perror("accept");

@@ -11,6 +11,15 @@
 #include <string.h>
 #include <stdlib.h>
 #include <curl/curl.h>
+#include "main.h"
+#include "cJSON.h"
+
+extern char g_acname[128];
+extern char g_test_acname[128];
+extern char g_acpath[128];
+extern int g_acport;
+
+#define MAIN_SERVER "https://lbps.ezlink-wifi.com"
 const char data[]="{\"method\":\"config\",\"params\":{\"data\":{\"idcode\":\"6A446YXI68\",\"passwd\":\"6A446YXI68\",\"pppoeid\":\"6A446YXI68\",\"ip\":\"192.168.3.168\"},\"serviceType\":2}}";
  
 struct WriteThis {
@@ -102,7 +111,7 @@ int lbps_discovery(void *arg)
   curl = curl_easy_init();
   if(curl) {
     /* First set the URL that is about to receive our POST. */ 
-    curl_easy_setopt(curl, CURLOPT_URL, "https://lbps.ezlink-wifi.com");
+    curl_easy_setopt(curl, CURLOPT_URL, MAIN_SERVER);
  
     /* Now specify we want to POST data */ 
     curl_easy_setopt(curl, CURLOPT_POST, 1L);
@@ -117,6 +126,7 @@ int lbps_discovery(void *arg)
     
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
  		
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     /* get verbose debug output please */ 
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
  
@@ -162,7 +172,7 @@ int lbps_discovery(void *arg)
 #endif
  
     /* Perform the request, res will get the return code */ 
-    printf("%d: start send to lbps...\n", __LINE__);
+    LOG_INFO("%d: start send to lbps...\n", __LINE__);
     res = curl_easy_perform(curl);
     /* Check for errors */ 
     if(res != CURLE_OK) {
@@ -170,8 +180,53 @@ int lbps_discovery(void *arg)
               curl_easy_strerror(res));
     }
               
-    printf("%d: get resp: %s.\n", __LINE__, s.ptr);
+    LOG_INFO("%s:%d: get resp: %s.\n", __FUNCTION__, __LINE__, s.ptr);
+	if(strlen(s.ptr) > 0){
+		cJSON *json, *json_result, *json_host, *json_port, *json_path;
+
+		json = cJSON_Parse(s.ptr);
+		if(!json || (json->type != cJSON_Object)){
+			LOG_INFO("json error 1!\n");
+			goto out;
+		}
+
+		json_result = cJSON_GetObjectItem(json, "result");
+		if(!json_result || (json_result->type != cJSON_Object)){
+			LOG_INFO("json error 2!\n");
+			goto out;
+		}
+
+		json_host = cJSON_GetObjectItem(json_result, "host");
+		if(!json_host || (json_host->type != cJSON_String)){
+			LOG_INFO("json error 3!\n");
+			goto out;
+		}
+
+		if(g_test_acname[0]){
+			snprintf(g_acname, sizeof(g_acname)-1, "%s", g_test_acname);
+		}else{
+			snprintf(g_acname, sizeof(g_acname)-1, "%s", json_host->valuestring);
+		}
+
+		json_port = cJSON_GetObjectItem(json_result, "port");
+		if(!json_port || (json_port->type != cJSON_Number)){
+			LOG_INFO("json error 4!\n");
+			goto out;
+		}
+
+		g_acport = json_port->valueint;
+
+		json_path = cJSON_GetObjectItem(json_result, "path");
+		if(!json_path || (json_path->type != cJSON_String)){
+			LOG_INFO("json error 5!\n");
+			goto out;
+		}
+
+		snprintf(g_acpath, sizeof(g_acpath)-1, "/%s", json_path->valuestring);
+
+	}
  
+out:
     if(s.ptr)free(s.ptr);
     
     /* always cleanup */ 

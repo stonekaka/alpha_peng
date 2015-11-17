@@ -185,7 +185,8 @@ unsigned int dmacl(
 	}
 
 	if(unlikely(!g_ap_flag)){
-		return NF_DROP;
+		//return NF_DROP;
+		return NF_ACCEPT;
 	}
 
 	__be32 in_iii;

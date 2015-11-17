@@ -69,6 +69,7 @@ msgdata *make_node(char *msg, int msg_len)
 
 	memcpy(node->msg, msg, sizeof(node->msg)>msg_len?msg_len:sizeof(node->msg));
 	node->consumed = 0;
+	node->trys = 0;
 	node->key = g_msg_seq++;
 	node->next = NULL;
 

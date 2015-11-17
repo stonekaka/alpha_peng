@@ -555,6 +555,7 @@ void print_ssid_dev(void)
 		}
 
 		LOG_INFO("\n\nssid[%d]: %s\n", i, g_ssid_dev[i].ssid);
+		LOG_INFO("dev:        %s\n", g_ssid_dev[i].dev);
 		LOG_INFO("portal_url: %s\n", g_ssid_dev[i].portal_url);
 		
 		int n = 0;
@@ -645,12 +646,16 @@ int build_ssid_dev_table(cJSON *json_data)
 		for(i = 0; i < MAX_WLAN_COUNT; i++){
 			snprintf(wlans[i].portal_url, sizeof(wlans[i].portal_url)-1, "%s", json_def_portal_val->valuestring);
 			memcpy(wlans[i].portal_ipaddr, ipaddr, sizeof(ipaddr));
+
+			snprintf(g_ssid_dev[i].portal_url, sizeof(g_ssid_dev[i].portal_url)-1, "%s", json_def_portal_val->valuestring);
+			memcpy(g_ssid_dev[i].portal_ipaddr, ipaddr, sizeof(ipaddr));
 		}
 		
 		LOG_INFO("add default portal:  %s: 0x%x\n", wlans[0].portal_url, wlans[i].portal_ipaddr[0]);
 
 		set_portal_nl(wlans);
-
+		
+		print_ssid_dev();
 	}
 
 	json_wlan_array = cJSON_GetObjectItem(json_data, "wlan");
@@ -732,11 +737,6 @@ int build_ssid_dev_table(cJSON *json_data)
 			parse_bw_array(json_dlist_white, &g_ssid_dev[number - 1], "domain", "white");
 		}
 
-		if(0 == i){
-			snprintf(g_ssid_dev[number - 1].dev, sizeof(g_ssid_dev[0].dev)-1, "%s", brlan_prefix);	
-		}else{
-			snprintf(g_ssid_dev[number - 1].dev, sizeof(g_ssid_dev[0].dev)-1, fmt, brlan_prefix, number - 1);
-		}
 		snprintf(g_ssid_dev[number - 1].ssid, sizeof(g_ssid_dev[number - 1].ssid) - 1, "%s", json_ssid->valuestring);
 
 		if(json_portal || json_def_portal_val){
@@ -974,7 +974,7 @@ static int handle_msg(char *msg)
 		json_data_method = cJSON_GetObjectItem(json_data,"method");
 		CHECK_JSON(json_data_method, cJSON_String);
 
-		if(!strcmp("conmmercialAP", json_data_method->valuestring)){
+		if(!strcmp("commercialAP", json_data_method->valuestring)){
 			json_data_params = cJSON_GetObjectItem(json_data,"params");
 			CHECK_JSON(json_data_params, cJSON_Array);
 			json_array_item = cJSON_GetArrayItem(json_data_params, 0);

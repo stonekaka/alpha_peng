@@ -41,11 +41,22 @@ int g_heartbeat_flag = 0;
 #define MAX_HEARTBEAT_TRYS 3
 #define HEARTBEAT_INTERVAL   30 //seconds
 
-char g_sta_msg[512] = {0};
 char g_acname[128] = {0};
+char g_test_acname[128] = {0};
+char g_acpath[128] = {0};
+int g_acport;
+
+char g_sta_msg[512] = {0};
 char g_ap_label_mac[32] = {0};
 char g_ap_label_mac_nocol[32] = {0};
-struct ssid_dev g_ssid_dev[MAX_WLAN_COUNT];
+struct ssid_dev g_ssid_dev[MAX_WLAN_COUNT]={
+	{.dev="ra0", .portal_url="http://portal-router.test.pengwifi.com/Auth?"},
+	{.dev="ra1", .portal_url="http://portal-router.test.pengwifi.com/Auth?"},
+	{.dev="ra2", .portal_url="http://portal-router.test.pengwifi.com/Auth?"},
+	{.dev="ra3", .portal_url="http://portal-router.test.pengwifi.com/Auth?"},
+	{.dev="ra4", .portal_url="http://portal-router.test.pengwifi.com/Auth?"},
+	{.dev="ra5", .portal_url="http://portal-router.test.pengwifi.com/Auth?"},
+	};
 
 char *str_ap_state[] = {"","AP_IDLE","AP_DISCOVERY","AP_JOIN_S1","AP_JOIN_S2","AP_JOIN_S3","AP_JOIN_S4",
 	"AP_JOIN_OK","AP_AUTH_REQ","AP_CONFIGING","AP_RESTART_NETWORK","AP_CONFIG_OK","AP_RUNNING","AP_REBOOTING","AP_UPGRADING","AP_RESET_FACTORY",
@@ -170,6 +181,16 @@ void ap_change_state(int state)
 	}else{
 		set_ap_online(1);	
 	}
+	
+	if(g_state == AP_OFFLINE){
+		pthread_mutex_lock(&mutex);
+		consume_all_node(&list_head_send);
+		pthread_mutex_unlock(&mutex);
+
+		pthread_mutex_lock(&mutex_r);
+		consume_all_node(&list_head_recv);
+		pthread_mutex_unlock(&mutex_r);
+	}
 
 	if(!s[0]){
 		return;
@@ -281,7 +302,13 @@ static void *pthread_nl_consume(void *tool_in)
 			if(0 == node->consumed){
 				n = websocket_write_back(tool->wsi, node->msg, strlen(node->msg));
 				if(n < 0) {
-					 LOG_INFO("%d: write error.\n", __LINE__);	
+					LOG_INFO("%d: write error. trys=%d\n", __LINE__, node->trys);	
+					if(node->trys++ > MSGDATA_MAX_TRYS){
+						LOG_INFO("reach max trys. key=%d consumed.\n", node->key);
+						node->consumed = 1;
+						free_all_consumed_node(&list_head_send);
+						LOG_INFO("reach max trys. clean result: send list len = %d\n", list_length(list_head_send));
+					 }
 					 sleep(10);
 				}else{
 					LOG_INFO("key=%d consumed.\n", node->key);
@@ -466,6 +493,7 @@ static struct option options[] = {
 	{ "port",	required_argument,	NULL, 'p' },
 	{ "ssl",	no_argument,		NULL, 's' },
 	{ "version",	required_argument,	NULL, 'v' },
+	{ "remote server",	required_argument,	NULL, 'r' },
 	{ "undeflated",	no_argument,		NULL, 'u' },
 	{ "nomux",	no_argument,		NULL, 'n' },
 	{ "longlived",	no_argument,		NULL, 'l' },
@@ -480,7 +508,6 @@ int main(int argc, char **argv)
 	int port = 7681;
 	int use_ssl = 0;
 	struct libwebsocket_context *context = NULL;
-	const char *address;
 	int ietf_version = -1; /* latest */
 	struct lws_context_creation_info info;
 	int svc_cnt = 0;
@@ -492,10 +519,14 @@ int main(int argc, char **argv)
 		goto usage;
 
 	while (n >= 0) {
-		n = getopt_long(argc, argv, "nuv:hsp:d:lf", options, NULL);
+		n = getopt_long(argc, argv, "r:nuv:hsp:d:lf", options, NULL);
 		if (n < 0)
 			continue;
 		switch (n) {
+		case 'r':
+			snprintf(g_test_acname, sizeof(g_test_acname) - 1, "%s", optarg);
+			printf("cmd input %s, %s\n", g_test_acname, optarg);
+			break;
 		case 'd':
 			lws_set_log_level(atoi(optarg), NULL);
 			break;
@@ -532,16 +563,15 @@ int main(int argc, char **argv)
 	dm_open_log();	
 	dm_log_message(1, "%s %s\n", argv[0], "Start ...");
 
-	if (optind >= argc)
+	/*if (optind >= argc)
 		goto usage;
+		*/
 
 	signal(SIGINT, sighandler);
 
 	get_ap_label_mac(g_ap_label_mac, sizeof(g_ap_label_mac) - 1, 0);
 	get_ap_label_mac(g_ap_label_mac_nocol, sizeof(g_ap_label_mac_nocol) - 1, 1);
 
-	address = argv[optind];
-	strncpy(g_acname, address, strlen(address) > sizeof(g_acname)?sizeof(g_acname):strlen(address));
 	/*
 	 * create the websockets context.  This tracks open connections and
 	 * knows how to route any traffic and which protocol version to use,
@@ -561,10 +591,12 @@ int main(int argc, char **argv)
 	while(!force_exit){
 		pthread_mutex_lock(&mutex);
 		consume_all_node(&list_head_send);
+		free_all_consumed_node(&list_head_send);
 		pthread_mutex_unlock(&mutex);
 
 		pthread_mutex_lock(&mutex_r);
 		consume_all_node(&list_head_recv);
+		free_all_consumed_node(&list_head_recv);
 		pthread_mutex_unlock(&mutex_r);
 
 		if(context){
@@ -581,18 +613,27 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		if(g_idle_cnt >= 1){
+		printf("compare: %d:%s\n", g_idle_cnt, g_acname);
+		if((g_idle_cnt >= 1) || (0 == g_acname[0])){
 			ap_change_state(AP_DISCOVERY);
-			//todo: discovery websocket server
+			if(g_test_acname[0]){
+				snprintf(g_acname, sizeof(g_acname)-1, "%s", g_test_acname);
+				snprintf(g_acpath, sizeof(g_acpath)-1, "%s", "/perception");
+				g_acport=8080;
+			}else{
+
+				//discovery websocket server
+				lbps_discovery(NULL);
+			}
 		}
 
 		/* create a client websocket */
-		LOG_INFO("%d:%s\n", optind, argv[optind]);
+		LOG_INFO("acname:%s, acport:%d, acpath:%s\n", g_acname, g_acport, g_acpath);
 		g_wsi = NULL;
 		g_wsi = libwebsocket_client_connect(context,
-			address, port, use_ssl,  "/perception",
-			argv[optind], argv[optind],
-			protocols[PROTOCOL_LWS_KEEPALIVE].name, ietf_version);printf("%d\n", __LINE__);
+			g_acname, g_acport, use_ssl, g_acpath,
+			g_acname, g_acname,
+			protocols[PROTOCOL_LWS_KEEPALIVE].name, ietf_version);
 
 		if (g_wsi == NULL) {
 			LOG_INFO("libwebsocket "

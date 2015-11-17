@@ -45,6 +45,7 @@ void *pthread_recv(void *arg);
 void *pthread_httpserver(void *arg);
 int send_nl_msg(struct msg_to_ker *msg_body, int msg_body_len);
 int set_ap_online(int flag);
+int lbps_discovery(void *arg);
 
 void ap_change_state(int state);
 int get_ap_label_mac(char *out, int outlen, int nocol);
