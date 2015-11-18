@@ -553,7 +553,7 @@ dm_drop:
 	return NF_DROP;
 }
 
-#if 1
+#if 0
 struct nf_hook_ops dmsniff_ops = {
     .hook = dmsniff,
     .pf = NFPROTO_IPV4,
@@ -570,9 +570,9 @@ struct nf_hook_ops dmacl_ops = {
 #else
 struct nf_hook_ops dmsniff_ops = {
     .hook = dmsniff,
-    .pf = NFPROTO_BRIDGE,
-    .hooknum = NF_BR_PRE_ROUTING,
-    .priority = NF_BR_PRI_NAT_DST_BRIDGED-2,
+    .pf = NFPROTO_IPV4,
+    .hooknum = NF_INET_PRE_ROUTING,
+    .priority = NF_IP_PRI_NAT_DST-2,
 }; 
 
 struct nf_hook_ops dmacl_ops = {
