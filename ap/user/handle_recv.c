@@ -620,7 +620,6 @@ int build_ssid_dev_table(cJSON *json_data)
 	int i = 0;
 	//char prefix_2g[16] = {0}, prefix_5g[16] = {0};
 	char *fmt = "%s%d";
-	char *brlan_prefix = "br-lan";
 	struct wlan_arg wlans[MAX_WLAN_COUNT];
 	cJSON *json_wlan_array = NULL, *json_g_sta_bw = NULL, *json_g_dn_bw = NULL;
 	cJSON *json_def_portal = NULL, *json_def_portal_val = NULL;

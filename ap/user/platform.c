@@ -67,8 +67,8 @@ int get_5g_dev_prefix(char *prefix, int len)
 
 int get_ap_label_mac(char *out, int outlen, int nocol)
 {
-	char *cmd = "ifconfig br-lan | grep \"HWaddr\" | awk '{print $5}' | sed 's/://g' | tr '[A-Z]' '[a-z]'";
-	char *cmd2 = "ifconfig br-lan | grep \"HWaddr\" | awk '{print $5}' | tr '[A-Z]' '[a-z]'";
+	char *cmd = "ifconfig br0 | grep \"HWaddr\" | awk '{print $5}' | sed 's/://g' | tr '[A-Z]' '[a-z]'";
+	char *cmd2 = "ifconfig br0 | grep \"HWaddr\" | awk '{print $5}' | tr '[A-Z]' '[a-z]'";
 	FILE *fp = NULL;
 	
 	if(!out){

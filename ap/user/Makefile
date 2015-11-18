@@ -1,7 +1,7 @@
 #export STAGING_DIR=/home/op/attitude_adjustment/staging_dir
 #include ../../../../libwebsockets/env.mk
 #include /home/op/gitlab/ezlink_api/build_patch/env.mk
-include /home/op/pengwifi/libwebsockets/env.mk.dm202
+include /home/op/pengwifi/libwebsockets/env.mk.ap200
 CFLAGS+=-Wall
 CFLAGS+=-I../../libwebsockets/
 LIB_DIR+=-L../../libwebsockets/
@@ -12,4 +12,4 @@ all:
 #	${CC} ${CFLAGS} -DLWS_NO_EXTENSIONS -L${LIB_DIR} -L. -lwebsockets -lssl -lcrypto -I${INCLUDE_DIR} -I../../../../libwebsockets/ -o tp test-ping.c
 
 clean:
-	rm -rf pwf 
+	rm -rf pwf  *.o
