@@ -1,5 +1,5 @@
 #include env.mk
-include ./env.mk.dm202
+include ./env.mk.ap200
 CFLAGS=-O2 -fPIC -Wall -I$(INCLUDE_DIR) -DLWS_NO_EXTENSIONS
 CFLAGS+=#-DHAVE_GETIFADDRS
 CFLAGS+=-I$(TOP_DIR)/progs.gpl/openssl-0.9.8za/include/

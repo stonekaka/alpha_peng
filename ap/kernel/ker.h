@@ -31,7 +31,7 @@
 #include <net/sock.h>
 #include <linux/jhash.h>
 
-#define KER_TEST 1
+#define KER_TEST 0
 
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,31)
 #include <linux/spinlock_types.h>
