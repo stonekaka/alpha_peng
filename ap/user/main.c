@@ -41,15 +41,15 @@ int g_heartbeat_flag = 0;
 #define MAX_HEARTBEAT_TRYS 3
 #define HEARTBEAT_INTERVAL   30 //seconds
 
-char g_acname[128] = {0};
-char g_test_acname[128] = {0};
-char g_acpath[128] = {0};
+char *g_acname;
+char *g_test_acname;
+char *g_acpath;
 int g_acport;
 
-char g_sta_msg[512] = {0};
 char g_ap_label_mac[32] = {0};
 char g_ap_label_mac_nocol[32] = {0};
-struct ssid_dev g_ssid_dev[MAX_WLAN_COUNT]={
+struct ssid_dev **g_ssid_dev;
+/*struct ssid_dev g_ssid_dev[MAX_WLAN_COUNT]={
 	{.dev="ra0", .portal_url="http://portal-router.test.pengwifi.com/Auth?"},
 	{.dev="ra1", .portal_url="http://portal-router.test.pengwifi.com/Auth?"},
 	{.dev="ra2", .portal_url="http://portal-router.test.pengwifi.com/Auth?"},
@@ -57,6 +57,7 @@ struct ssid_dev g_ssid_dev[MAX_WLAN_COUNT]={
 	{.dev="ra4", .portal_url="http://portal-router.test.pengwifi.com/Auth?"},
 	{.dev="ra5", .portal_url="http://portal-router.test.pengwifi.com/Auth?"},
 	};
+*/
 
 char *str_ap_state[] = {"","AP_IDLE","AP_DISCOVERY","AP_JOIN_S1","AP_JOIN_S2","AP_JOIN_S3","AP_JOIN_S4",
 	"AP_JOIN_OK","AP_AUTH_REQ","AP_CONFIGING","AP_RESTART_NETWORK","AP_CONFIG_OK","AP_RUNNING","AP_REBOOTING","AP_UPGRADING","AP_RESET_FACTORY",
@@ -64,6 +65,7 @@ char *str_ap_state[] = {"","AP_IDLE","AP_DISCOVERY","AP_JOIN_S1","AP_JOIN_S2","A
 
 extern int g_msg_seq;
 extern int g_msg_seq_r;
+extern char *g_ap_last_config;
 
 enum demo_protocols {
 
@@ -113,6 +115,52 @@ void ws_log(char *msg)
 {
 	if(msg)
 		LOG_INFO(msg);
+}
+
+int init_global_mem(void)
+{
+	int i = 0;
+
+	g_ssid_dev = (struct ssid_dev **)malloc(MAX_WLAN_COUNT * sizeof(struct ssid_dev *));
+	if(NULL == g_ssid_dev){
+		printf("%d\n",__LINE__);
+		return -1;
+	}
+
+	for(i = 0; i < MAX_WLAN_COUNT; i++){
+		struct ssid_dev *p = NULL;printf("%d\n",__LINE__);
+		p = (struct ssid_dev *) malloc(sizeof(struct ssid_dev));	
+		if(p == NULL){
+			LOG_INFO("malloc failed., i=%d\n", i);
+			//todo: free malloced memory
+			return -1;
+		}printf("%d\n",__LINE__);
+
+		memset(p, 0, sizeof(struct ssid_dev));printf("%d\n",__LINE__);
+		snprintf(p->dev, sizeof(p->dev) - 1, "ra%d", i);printf("%d\n",__LINE__);
+		snprintf(p->portal_url, sizeof(p->portal_url) - 1, "%s", "http://portal-router.test.pengwifi.com/Auth?");printf("%d\n",__LINE__);
+		
+		g_ssid_dev[i] = p;printf("%d\n",__LINE__);
+	}
+
+	if(NULL == g_ap_last_config){
+		g_ap_last_config = (char *)malloc(MAX_MSG_SIZE);
+		if(!g_ap_last_config){
+			LOG_INFO("g_ap_last_config malloc failed.\n");
+			return -1;	
+		}
+		memset(g_ap_last_config, 0, MAX_MSG_SIZE);
+	}
+
+	g_acname = (char *)malloc(sizeof(char) * MAX_NAME_SIZE);
+	g_test_acname = (char *)malloc(sizeof(char) * MAX_NAME_SIZE);
+	g_acpath = (char *)malloc(sizeof(char) * MAX_NAME_SIZE);
+	if(!g_acname || !g_test_acname || !g_acpath){
+		LOG_INFO("vals malloc failed.\n");
+		return -1;	
+	}
+
+	return 0;
 }
 
 void ap_change_state(int state)
@@ -515,6 +563,10 @@ int main(int argc, char **argv)
 
 	memset(&info, 0, sizeof info);
 
+	if(init_global_mem()){
+		return -1;
+	}
+	
 	if (argc < 2)
 		goto usage;
 
@@ -524,7 +576,7 @@ int main(int argc, char **argv)
 			continue;
 		switch (n) {
 		case 'r':
-			snprintf(g_test_acname, sizeof(g_test_acname) - 1, "%s", optarg);
+			snprintf(g_test_acname, MAX_NAME_SIZE, "%s", optarg);
 			printf("cmd input %s, %s\n", g_test_acname, optarg);
 			break;
 		case 'd':
@@ -571,7 +623,7 @@ int main(int argc, char **argv)
 
 	get_ap_label_mac(g_ap_label_mac, sizeof(g_ap_label_mac) - 1, 0);
 	get_ap_label_mac(g_ap_label_mac_nocol, sizeof(g_ap_label_mac_nocol) - 1, 1);
-
+	
 	/*
 	 * create the websockets context.  This tracks open connections and
 	 * knows how to route any traffic and which protocol version to use,
@@ -617,8 +669,8 @@ int main(int argc, char **argv)
 		if((g_idle_cnt >= 1) || (0 == g_acname[0])){
 			ap_change_state(AP_DISCOVERY);
 			if(g_test_acname[0]){
-				snprintf(g_acname, sizeof(g_acname)-1, "%s", g_test_acname);
-				snprintf(g_acpath, sizeof(g_acpath)-1, "%s", "/perception");
+				snprintf(g_acname, MAX_NAME_SIZE-1, "%s", g_test_acname);
+				snprintf(g_acpath, MAX_NAME_SIZE-1, "%s", "/perception");
 				g_acport=8080;
 			}else{
 

@@ -55,6 +55,10 @@ int get_ssid_portal_by_dev(char *ssid, int slen, char *portal, int plen, char *d
 pthread_mutex_t mutex;
 pthread_mutex_t mutex_r;
 
+#define MAX_MSG_SIZE  8192
+#define MAX_NAME_SIZE 256
+#define MAX_STA_MSG_SIZE 512
+
 #define CHECK_JSON(_key, _type) do{if(!_key || _key->type != _type){printf("%d: error json type %d\n", __LINE__, _type);return -1;}}while(0)
 #define CHECK_JSONS(_key, _type1, _type2) do{if(!_key || ((_key->type != _type1) && (_key->type != _type2))){printf("%d: error json type %d\n", __LINE__,_type);return -1;}}while(0)
 #define CHECK_JSON_EASY(_key, _type) do{if(_key && _key->type != _type){printf("%d: error json type %d\n", __LINE__, _type);return -1;}}while(0)

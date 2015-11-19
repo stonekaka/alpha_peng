@@ -15,7 +15,7 @@ extern struct ssid_dev g_ssid_dev[];
 
 int get_wan_mac(char *mac, int len)
 {
-	char *cmd = "ifconfig eth0.2 | grep HWaddr |awk '{print $5}' | tr '[A-Z]' '[a-z]'";
+	char *cmd = "ifconfig br0 | grep HWaddr |awk '{print $5}' | tr '[A-Z]' '[a-z]'";
 	FILE *fp = NULL;
 
 	fp = popen(cmd, "r");
@@ -32,7 +32,7 @@ int get_wan_mac(char *mac, int len)
 
 int get_wan_ip(char *ip, int len)
 {
-	char *cmd = "ifconfig eth0.2 | grep \"inet addr\" |awk '{print $2}' | awk -F: '{print $2}'";
+	char *cmd = "ifconfig br0 | grep \"inet addr\" |awk '{print $2}' | awk -F: '{print $2}'";
 	FILE *fp = NULL;
 
 	fp = popen(cmd, "r");

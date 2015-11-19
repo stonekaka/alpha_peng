@@ -203,9 +203,9 @@ int lbps_discovery(void *arg)
 		}
 
 		if(g_test_acname[0]){
-			snprintf(g_acname, sizeof(g_acname)-1, "%s", g_test_acname);
+			snprintf(g_acname, MAX_NAME_SIZE-1, "%s", g_test_acname);
 		}else{
-			snprintf(g_acname, sizeof(g_acname)-1, "%s", json_host->valuestring);
+			snprintf(g_acname, MAX_NAME_SIZE-1, "%s", json_host->valuestring);
 		}
 
 		json_port = cJSON_GetObjectItem(json_result, "port");
@@ -222,7 +222,7 @@ int lbps_discovery(void *arg)
 			goto out;
 		}
 
-		snprintf(g_acpath, sizeof(g_acpath)-1, "/%s", json_path->valuestring);
+		snprintf(g_acpath, MAX_NAME_SIZE-1, "/%s", json_path->valuestring);
 
 	}
  

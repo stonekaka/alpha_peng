@@ -28,11 +28,11 @@
 extern int g_state;
 extern int g_connection_flag;
 extern int g_heartbeat_flag;
-extern struct ssid_dev g_ssid_dev[];
+extern struct ssid_dev **g_ssid_dev;
 extern FILE *g_log_fp;
 extern char g_ap_label_mac[];
 
-char g_ap_last_config[8192];
+char *g_ap_last_config;
 
 int enqueue_msg(char *msg)
 {
@@ -101,9 +101,9 @@ int get_client_list(char *client_list, int len)
 		}
 
 		for(i = 0; i < MAX_WLAN_COUNT; i++){
-			//printf("%s: %d: compare: %s %s\n", __FUNCTION__, i, g_ssid_dev[i].dev, dev);
-			if(0 == strcmp(g_ssid_dev[i].dev, ifname)){
-				snprintf(ssid, len, "%s", g_ssid_dev[i].ssid);
+			//printf("%s: %d: compare: %s %s\n", __FUNCTION__, i, g_ssid_dev[i]->dev, dev);
+			if(0 == strcmp(g_ssid_dev[i]->dev, ifname)){
+				snprintf(ssid, len, "%s", g_ssid_dev[i]->ssid);
 				//printf("%s: dev=%s, ssid=%s\n", __FUNCTION__, dev, ssid);
 				break;
 			}
@@ -408,16 +408,16 @@ int exec_blk_wht_list(void)
 	memset(sta, 0, sizeof(struct u_sta_blk_wht)*MAX_WLAN_COUNT*MAX_STA_BW_CNT);
 			
 	for(j = 0; j < MAX_WLAN_COUNT; j++) {
-		if(0 == g_ssid_dev[j].ssid[0])continue;
+		if(0 == g_ssid_dev[j]->ssid[0])continue;
 
 		for(k = 0; k < MAX_STA_BW_CNT; k++){
-			if(0 != memcmp(g_ssid_dev[j].sta_black[k], mac_zero, ETH_ALEN)){
-				memcpy(sta[i].mac, g_ssid_dev[j].sta_black[k], ETH_ALEN);
+			if(0 != memcmp(g_ssid_dev[j]->sta_black[k], mac_zero, ETH_ALEN)){
+				memcpy(sta[i].mac, g_ssid_dev[j]->sta_black[k], ETH_ALEN);
 				sta[i].map[0][j] = 1;printf("ssid[%d].sta_black[%d] add, sta[%d].mac=%02x\n", j, k, i, sta[i].mac[5]);
 				i++;
 			}
-			if(0 != memcmp(g_ssid_dev[j].sta_white[k], mac_zero, ETH_ALEN)){
-				memcpy(sta[i].mac, g_ssid_dev[j].sta_white[k], ETH_ALEN);
+			if(0 != memcmp(g_ssid_dev[j]->sta_white[k], mac_zero, ETH_ALEN)){
+				memcpy(sta[i].mac, g_ssid_dev[j]->sta_white[k], ETH_ALEN);
 				sta[i].map[1][j] = 1;
 				i++;
 			}
@@ -428,21 +428,21 @@ int exec_blk_wht_list(void)
 	memset(dn, 0, sizeof(struct u_dn_blk_wht)*MAX_WLAN_COUNT*MAX_DN_BW_CNT*MAX_DN_IP);
 			
 	for(j = 0; j < MAX_WLAN_COUNT; j++) {
-		if(0 == g_ssid_dev[j].ssid[0])continue;
+		if(0 == g_ssid_dev[j]->ssid[0])continue;
 
 		for(k = 0; k < MAX_DN_BW_CNT; k++){
 			for(m = 0; m < MAX_DN_IP; m++) {
-				if(0 == g_ssid_dev[j].domain_black_ipaddr[k][m])continue;
+				if(0 == g_ssid_dev[j]->domain_black_ipaddr[k][m])continue;
 
-				if(0 != g_ssid_dev[j].domain_black_ipaddr[k][m]){
-					dn[i].ipaddr = g_ssid_dev[j].domain_black_ipaddr[k][m];		
-					memcpy(dn[i].domain, g_ssid_dev[j].domain_black[k], MAX_DOMAIN_LEN);
+				if(0 != g_ssid_dev[j]->domain_black_ipaddr[k][m]){
+					dn[i].ipaddr = g_ssid_dev[j]->domain_black_ipaddr[k][m];		
+					memcpy(dn[i].domain, g_ssid_dev[j]->domain_black[k], MAX_DOMAIN_LEN);
 					dn[i].map[0][j] = 1;
 					i++;
 				}
-				if(0 != g_ssid_dev[j].domain_white_ipaddr[k][m]){
-					dn[i].ipaddr = g_ssid_dev[j].domain_white_ipaddr[k][m];		
-					memcpy(dn[i].domain, g_ssid_dev[j].domain_white[k], MAX_DOMAIN_LEN);
+				if(0 != g_ssid_dev[j]->domain_white_ipaddr[k][m]){
+					dn[i].ipaddr = g_ssid_dev[j]->domain_white_ipaddr[k][m];		
+					memcpy(dn[i].domain, g_ssid_dev[j]->domain_white[k], MAX_DOMAIN_LEN);
 					dn[i].map[1][j] = 1;
 					i++;
 				}
@@ -554,57 +554,57 @@ void print_ssid_dev(void)
 			continue;
 		}
 
-		LOG_INFO("\n\nssid[%d]: %s\n", i, g_ssid_dev[i].ssid);
-		LOG_INFO("dev:        %s\n", g_ssid_dev[i].dev);
-		LOG_INFO("portal_url: %s\n", g_ssid_dev[i].portal_url);
+		LOG_INFO("\n\nssid[%d]: %s\n", i, g_ssid_dev[i]->ssid);
+		LOG_INFO("dev:        %s\n", g_ssid_dev[i]->dev);
+		LOG_INFO("portal_url: %s\n", g_ssid_dev[i]->portal_url);
 		
 		int n = 0;
-		int portal_addr_cnt = sizeof(g_ssid_dev[i].portal_ipaddr)/sizeof(g_ssid_dev[i].portal_ipaddr[0]);
+		int portal_addr_cnt = sizeof(g_ssid_dev[i]->portal_ipaddr)/sizeof(g_ssid_dev[i]->portal_ipaddr[0]);
 		for(n = 0; n < portal_addr_cnt; n++){
-			if(!g_ssid_dev[i].portal_ipaddr[n])continue;
+			if(!g_ssid_dev[i]->portal_ipaddr[n])continue;
 			memset(&in_ip, 0, sizeof(struct in_addr));
-			in_ip.s_addr = g_ssid_dev[i].portal_ipaddr[n];
+			in_ip.s_addr = g_ssid_dev[i]->portal_ipaddr[n];
 			LOG_INFO("%s  ", inet_ntoa(in_ip));
 		}
 
-		int sta_cnt = sizeof(g_ssid_dev[i].sta_black)/sizeof(g_ssid_dev[i].sta_black[0]);
+		int sta_cnt = sizeof(g_ssid_dev[i]->sta_black)/sizeof(g_ssid_dev[i]->sta_black[0]);
 		LOG_INFO("\nsta black list:\n");
 		for(n = 0; n < sta_cnt; n++){
-			if(0 == memcmp(g_ssid_dev[i].sta_black[n], mac_zero, ETH_ALEN))continue;
-			LOG_INFO("%02x:%02x:%02x:%02x:%02x:%02x  ", g_ssid_dev[i].sta_black[n][0],g_ssid_dev[i].sta_black[n][1],
-			g_ssid_dev[i].sta_black[n][2],g_ssid_dev[i].sta_black[n][3],
-			g_ssid_dev[i].sta_black[n][4],g_ssid_dev[i].sta_black[n][5]);
+			if(0 == memcmp(g_ssid_dev[i]->sta_black[n], mac_zero, ETH_ALEN))continue;
+			LOG_INFO("%02x:%02x:%02x:%02x:%02x:%02x  ", g_ssid_dev[i]->sta_black[n][0],g_ssid_dev[i]->sta_black[n][1],
+			g_ssid_dev[i]->sta_black[n][2],g_ssid_dev[i]->sta_black[n][3],
+			g_ssid_dev[i]->sta_black[n][4],g_ssid_dev[i]->sta_black[n][5]);
 		}
 		LOG_INFO("\nsta white list:\n");
 		for(n = 0; n < sta_cnt; n++){
-			if(0 == memcmp(g_ssid_dev[i].sta_white[n], mac_zero, ETH_ALEN))continue;
-			LOG_INFO("%02x:%02x:%02x:%02x:%02x:%02x  ", g_ssid_dev[i].sta_white[n][0],g_ssid_dev[i].sta_white[n][1],
-			g_ssid_dev[i].sta_white[n][2],g_ssid_dev[i].sta_white[n][3],
-			g_ssid_dev[i].sta_white[n][4],g_ssid_dev[i].sta_white[n][5]);
+			if(0 == memcmp(g_ssid_dev[i]->sta_white[n], mac_zero, ETH_ALEN))continue;
+			LOG_INFO("%02x:%02x:%02x:%02x:%02x:%02x  ", g_ssid_dev[i]->sta_white[n][0],g_ssid_dev[i]->sta_white[n][1],
+			g_ssid_dev[i]->sta_white[n][2],g_ssid_dev[i]->sta_white[n][3],
+			g_ssid_dev[i]->sta_white[n][4],g_ssid_dev[i]->sta_white[n][5]);
 		}
 		
-		int domain_cnt = sizeof(g_ssid_dev[i].domain_black)/sizeof(g_ssid_dev[i].domain_black[0]);
+		int domain_cnt = sizeof(g_ssid_dev[i]->domain_black)/sizeof(g_ssid_dev[i]->domain_black[0]);
 		LOG_INFO("\ndomain black list:\n");
 		for(n = 0; n < domain_cnt; n++){
-			if(!g_ssid_dev[i].domain_black[n][0])continue;
-			LOG_INFO("%s ", g_ssid_dev[i].domain_black[n]);
+			if(!g_ssid_dev[i]->domain_black[n][0])continue;
+			LOG_INFO("%s ", g_ssid_dev[i]->domain_black[n]);
 			int m = 0;
-			for(m = 0; m < sizeof(g_ssid_dev[i].domain_black_ipaddr[0])/sizeof(g_ssid_dev[i].domain_black_ipaddr[0][0]); m++){
-				if(!g_ssid_dev[i].domain_black_ipaddr[n][m])continue;
+			for(m = 0; m < sizeof(g_ssid_dev[i]->domain_black_ipaddr[0])/sizeof(g_ssid_dev[i]->domain_black_ipaddr[0][0]); m++){
+				if(!g_ssid_dev[i]->domain_black_ipaddr[n][m])continue;
 				memset(&in_ip, 0, sizeof(struct in_addr));
-				in_ip.s_addr = g_ssid_dev[i].domain_black_ipaddr[n][m];
+				in_ip.s_addr = g_ssid_dev[i]->domain_black_ipaddr[n][m];
 				LOG_INFO("%s ", inet_ntoa(in_ip));	
 			}
 		}
 		LOG_INFO("\ndomain white list:\n");
 		for(n = 0; n < domain_cnt; n++){
-			if(!g_ssid_dev[i].domain_white[n][0])continue;
-			LOG_INFO("%s ", g_ssid_dev[i].domain_white[n]);
+			if(!g_ssid_dev[i]->domain_white[n][0])continue;
+			LOG_INFO("%s ", g_ssid_dev[i]->domain_white[n]);
 			int m = 0;
-			for(m = 0; m < sizeof(g_ssid_dev[i].domain_white_ipaddr[0])/sizeof(g_ssid_dev[i].domain_white_ipaddr[0][0]); m++){
-				if(!g_ssid_dev[i].domain_white_ipaddr[n][m])continue;
+			for(m = 0; m < sizeof(g_ssid_dev[i]->domain_white_ipaddr[0])/sizeof(g_ssid_dev[i]->domain_white_ipaddr[0][0]); m++){
+				if(!g_ssid_dev[i]->domain_white_ipaddr[n][m])continue;
 				memset(&in_ip, 0, sizeof(struct in_addr));
-				in_ip.s_addr = g_ssid_dev[i].domain_white_ipaddr[n][m];
+				in_ip.s_addr = g_ssid_dev[i]->domain_white_ipaddr[n][m];
 				LOG_INFO("%s ", inet_ntoa(in_ip));
 			}
 		}
@@ -646,8 +646,8 @@ int build_ssid_dev_table(cJSON *json_data)
 			snprintf(wlans[i].portal_url, sizeof(wlans[i].portal_url)-1, "%s", json_def_portal_val->valuestring);
 			memcpy(wlans[i].portal_ipaddr, ipaddr, sizeof(ipaddr));
 
-			snprintf(g_ssid_dev[i].portal_url, sizeof(g_ssid_dev[i].portal_url)-1, "%s", json_def_portal_val->valuestring);
-			memcpy(g_ssid_dev[i].portal_ipaddr, ipaddr, sizeof(ipaddr));
+			snprintf(g_ssid_dev[i]->portal_url, sizeof(g_ssid_dev[i]->portal_url)-1, "%s", json_def_portal_val->valuestring);
+			memcpy(g_ssid_dev[i]->portal_ipaddr, ipaddr, sizeof(ipaddr));
 		}
 		
 		LOG_INFO("add default portal:  %s: 0x%x\n", wlans[0].portal_url, wlans[i].portal_ipaddr[0]);
@@ -714,7 +714,7 @@ int build_ssid_dev_table(cJSON *json_data)
 		json_clist = cJSON_GetObjectItem(json_item, "client_list");
 		CHECK_JSON_EASY(json_clist, cJSON_Object);
 		json_dlist = cJSON_GetObjectItem(json_item, "domain_list");
-		CHECK_JSON_EASY(json_dlist, cJSON_Object);printf("%d\n", __LINE__);
+		CHECK_JSON_EASY(json_dlist, cJSON_Object);
 
 		if(json_clist){
 			json_clist_black = cJSON_GetObjectItem(json_clist, "black");
@@ -722,8 +722,8 @@ int build_ssid_dev_table(cJSON *json_data)
 			json_clist_white = cJSON_GetObjectItem(json_clist, "white");
 			CHECK_JSON_EASY(json_clist_white, cJSON_Array);
 
-			parse_bw_array(json_clist_black, &g_ssid_dev[number - 1], "sta", "black");
-			parse_bw_array(json_clist_white, &g_ssid_dev[number - 1], "sta", "white");
+			parse_bw_array(json_clist_black, g_ssid_dev[number - 1], "sta", "black");
+			parse_bw_array(json_clist_white, g_ssid_dev[number - 1], "sta", "white");
 		}
 
 		if(json_dlist){
@@ -732,20 +732,20 @@ int build_ssid_dev_table(cJSON *json_data)
 			json_dlist_white = cJSON_GetObjectItem(json_dlist, "white");
 			CHECK_JSON_EASY(json_dlist_white, cJSON_Array);
 
-			parse_bw_array(json_dlist_black, &g_ssid_dev[number - 1], "domain", "black");
-			parse_bw_array(json_dlist_white, &g_ssid_dev[number - 1], "domain", "white");
+			parse_bw_array(json_dlist_black, g_ssid_dev[number - 1], "domain", "black");
+			parse_bw_array(json_dlist_white, g_ssid_dev[number - 1], "domain", "white");
 		}
 
-		snprintf(g_ssid_dev[number - 1].ssid, sizeof(g_ssid_dev[number - 1].ssid) - 1, "%s", json_ssid->valuestring);
+		snprintf(g_ssid_dev[number - 1]->ssid, sizeof(g_ssid_dev[number - 1]->ssid) - 1, "%s", json_ssid->valuestring);
 
 		if(json_portal || json_def_portal_val){
-			snprintf(g_ssid_dev[number - 1].portal_url, sizeof(g_ssid_dev[number - 1].portal_url) - 1, "%s", 
+			snprintf(g_ssid_dev[number - 1]->portal_url, sizeof(g_ssid_dev[number - 1]->portal_url) - 1, "%s", 
 				json_portal?json_portal->valuestring:json_def_portal_val->valuestring);
-			resolve_url(g_ssid_dev[number - 1].portal_url, g_ssid_dev[number - 1].portal_ipaddr, 
-				sizeof(g_ssid_dev[number - 1].portal_ipaddr)/sizeof(g_ssid_dev[number - 1].portal_ipaddr[0]));
+			resolve_url(g_ssid_dev[number - 1]->portal_url, g_ssid_dev[number - 1]->portal_ipaddr, 
+				sizeof(g_ssid_dev[number - 1]->portal_ipaddr)/sizeof(g_ssid_dev[number - 1]->portal_ipaddr[0]));
 
-			snprintf(wlans[number - 1].portal_url, sizeof(wlans[number - 1].portal_url)-1, "%s", g_ssid_dev[number - 1].portal_url);
-			memcpy(wlans[number - 1].portal_ipaddr, g_ssid_dev[number - 1].portal_ipaddr, sizeof(wlans[number - 1].portal_ipaddr));
+			snprintf(wlans[number - 1].portal_url, sizeof(wlans[number - 1].portal_url)-1, "%s", g_ssid_dev[number - 1]->portal_url);
+			memcpy(wlans[number - 1].portal_ipaddr, g_ssid_dev[number - 1]->portal_ipaddr, sizeof(wlans[number - 1].portal_ipaddr));
 		}
 
 		//printf("build ssid-dev: %d %s %s\n", json_number->valueint, g_ssid_dev[json_number->valueint - 1].ssid, g_ssid_dev[json_number->valueint - 1].dev);
@@ -768,8 +768,8 @@ static int handle_wifi_config(char *msg)
 		LOG_INFO("%d: arg is null\n", __LINE__);
 		return -1;
 	}
-	
-	if(g_ap_last_config[0] && (0 == strcmp(g_ap_last_config, msg))){
+
+	if(g_ap_last_config && g_ap_last_config[0] && (0 == strcmp(g_ap_last_config, msg))){
 		LOG_INFO("%s: duplicate config !\n", __FUNCTION__);
 		dm_log_message(1, "%s: duplicate config !\n", __FUNCTION__);
 		return 0;
@@ -799,8 +799,8 @@ static int handle_wifi_config(char *msg)
 	CHECK_JSON_EASY(json_data_radio, cJSON_Object);
 
 	LOG_INFO("Parse wifi config success!!!\n");
-	memset(g_ap_last_config, 0, sizeof(g_ap_last_config)-1);
-	memcpy(g_ap_last_config, msg, sizeof(g_ap_last_config)-1);
+	memset(g_ap_last_config, 0, MAX_MSG_SIZE);
+	snprintf(g_ap_last_config, MAX_MSG_SIZE - 1, "%s", msg);
 	build_ssid_dev_table(json_data);//this function must before cJSON_Delete
 
 	cJSON_Delete(json);
