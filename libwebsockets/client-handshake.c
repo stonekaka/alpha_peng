@@ -104,7 +104,7 @@ struct libwebsocket *libwebsocket_client_connect_2(
 		ai.ai_socktype = SOCK_STREAM;
 		ai.ai_flags = AI_CANONNAME;
 
-		if (getaddrinfo(ads, NULL, &ai, &result))
+		if (getaddrinfo(ads, NULL, NULL, &result))
 			goto oom4;
 
 		res = result;

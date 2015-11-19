@@ -9,6 +9,7 @@
 *.ko.cmd
 *.mod.c
 *.swp
+ap/user/pwf
 
 # Precompiled Headers
 *.gch

@@ -340,7 +340,7 @@ void handle_send_to_ac(struct libwebsocket *wsi)
 		char fmt[] = "{\"type\":\"auth\",\"idcode\":\"%s\",\"mac\":\"%s\"}";
 		char buf[128] = {0};
 
-		snprintf(buf, sizeof(buf)-1, fmt, g_ap_label_mac);
+		snprintf(buf, sizeof(buf)-1, fmt, g_ap_label_mac, g_ap_label_mac);
 
 		n = libwebsocket_write(wsi, (unsigned char *)buf, strlen(buf), opts | LWS_WRITE_TEXT);
 
