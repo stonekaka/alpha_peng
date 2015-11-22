@@ -112,6 +112,10 @@ int get_ssid_portal_by_dev(char *ssid, int slen, char *portal, int plen, char *d
 		snprintf(portal, plen, "%s", g_ssid_dev[0].portal_url);
 	}
 
+	if(!portal[0]){ //must have portal, avoid redirect loop
+		snprintf(portal, plen, "%s", "portal-router.test.pengwifi.com/Auth?");
+	}
+
 	return 0;
 }
 

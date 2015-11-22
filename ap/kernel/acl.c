@@ -34,7 +34,7 @@ extern int g_bridge_mode;
 extern rwlock_t g_table_lock;
 extern struct hlist_head sta_table[STA_HASH_SIZE];
 
-char *wlan_ifname[]={"ra0","ra1","ra2","ra3","ra4","ra5"};
+char *wlan_ifname[MAX_WLAN_COUNT][2]={{"ath0","ath16"},{"ath1","ath17"},{"ath2","ath18"},{"ath3","ath19"},{"ath4","ath20"},{"ath5","ath21"}};
 struct wlan_arg wlans[MAX_WLAN_COUNT];
 
 int is_dst_portal(unsigned int daddr)
@@ -80,7 +80,7 @@ int check_sta_blk_wht(unsigned char *smac, unsigned int daddr, char *ifname)
 	read_lock(&g_sta_bw_lock);
 	read_lock(&g_dn_bw_lock);
 	for(i = 0; i < MAX_WLAN_COUNT; i++) {
-		if(!strncmp(ifname, wlan_ifname[i], len)){
+		if(!strncmp(ifname, wlan_ifname[i][0], len) || !strncmp(ifname, wlan_ifname[i][1], len)){
 			dn_head = &dn_bw_table[get_dn_bw_hash(daddr)];
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,38)
 			hlist_for_each_entry_rcu(dn_node, dn_head, hlist) {
@@ -252,7 +252,6 @@ unsigned int dmacl(
 		}
 	}
 	read_unlock(&g_table_lock);
-
 	return ret;
 }
 

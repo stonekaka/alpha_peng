@@ -216,6 +216,7 @@ static void *stainfo_start(struct seq_file *f, loff_t *pos)
 static void *sta_bw_start(struct seq_file *f, loff_t *pos)
 {
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,31)
+	return NULL;
 #else
 	return seq_hlist_start(&sta_bw_table[STA_BW_ANCHOR_HASH], *pos);
 #endif
@@ -224,6 +225,7 @@ static void *sta_bw_start(struct seq_file *f, loff_t *pos)
 static void *dn_bw_start(struct seq_file *f, loff_t *pos)
 {
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,31)
+	return NULL;
 #else
 	return seq_hlist_start(&dn_bw_table[DN_BW_ANCHOR_HASH], *pos);
 #endif

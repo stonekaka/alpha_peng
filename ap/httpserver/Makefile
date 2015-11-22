@@ -1,6 +1,6 @@
 #export STAGING_DIR=/home/op/attitude_adjustment/staging_dir
 #include /home/op/shiyan/netlink/kernel/../env.mk
-include /home/op/pengwifi/libwebsockets/env.mk
+include /home/op/pengwifi/libwebsockets/env.mk.dm202
 #CFLAGS=-Wall
 
 all:
