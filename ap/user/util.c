@@ -59,6 +59,19 @@ int ascii2mac_nocol(const char *addr, unsigned char *res)
 	return 0;
 }
 
+int is_big_endian(void)
+{
+	union u
+	{
+		int a;
+		char b;
+	}c;
+	
+	c.a = 1;
+
+	return (c.b != 1);
+}
+
 int get_hash_by_mac(const char *addr, unsigned int *hash)
 {
 	int ret = -1;
@@ -85,7 +98,23 @@ int get_hash_by_mac(const char *addr, unsigned int *hash)
 		memcpy(u.b, mac + 2, 4);
 		u.b[0] = u.b[0] ^ mac[0];
 		u.b[1] = u.b[1] ^ mac[1];
-		*hash = htonl(u.a);
+		if(is_big_endian()){
+			//printf("is big endian\n");
+			/*to get same result with AC*/
+			unsigned char p;
+			
+			p = u.b[0];
+			u.b[0] = u.b[3];
+			u.b[3] = p;
+			p = u.b[1];
+			u.b[1] = u.b[2];
+			u.b[2] = p;
+		
+			*hash = htonl(u.a);	
+		}else{
+			//printf("is little endian\n");
+			*hash = htonl(u.a);
+		}
 	}
 
 	return 0;
