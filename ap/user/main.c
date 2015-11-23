@@ -134,13 +134,13 @@ int init_global_mem(void)
 			LOG_INFO("malloc failed., i=%d\n", i);
 			//todo: free malloced memory
 			return -1;
-		}printf("%d\n",__LINE__);
+		}
 
-		memset(p, 0, sizeof(struct ssid_dev));printf("%d\n",__LINE__);
-		snprintf(p->dev, sizeof(p->dev) - 1, "ra%d", i);printf("%d\n",__LINE__);
-		snprintf(p->portal_url, sizeof(p->portal_url) - 1, "%s", "http://portal-router.test.pengwifi.com/Auth?");printf("%d\n",__LINE__);
+		memset(p, 0, sizeof(struct ssid_dev));
+		snprintf(p->dev, sizeof(p->dev) - 1, "ath%d", i);
+		snprintf(p->portal_url, sizeof(p->portal_url) - 1, "%s", DEFAULT_PORTAL);
 		
-		g_ssid_dev[i] = p;printf("%d\n",__LINE__);
+		g_ssid_dev[i] = p;printf("%d:: portal[%d]=%s\n",__LINE__, i, g_ssid_dev[i]->portal_url);
 	}
 
 	if(NULL == g_ap_last_config){

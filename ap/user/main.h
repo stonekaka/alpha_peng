@@ -93,4 +93,6 @@ int exec_wlan_config(void);
 
 #define LOG_INFO(format, ...) do{fprintf(stdout, format, ##__VA_ARGS__);dm_log_message(1, format, ##__VA_ARGS__);}while(0)
 
+#define DEFAULT_PORTAL "http://portal-router.test.pengwifi.com/Auth?"
+
 #endif

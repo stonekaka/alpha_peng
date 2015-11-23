@@ -32,7 +32,7 @@
 
 extern int g_state;
 extern char g_acname[];
-extern struct ssid_dev g_ssid_dev[];
+extern struct ssid_dev **g_ssid_dev;
 extern char g_ap_label_mac_nocol[];
 
 
@@ -99,23 +99,19 @@ int get_ssid_portal_by_dev(char *ssid, int slen, char *portal, int plen, char *d
 	}
 
 	for(i = 0; i < MAX_WLAN_COUNT; i++){
-		printf("%s: %d: compare: -%s- -%s-\n", __FUNCTION__, i, g_ssid_dev[i].dev, dev);
-		if(0 == strcmp(g_ssid_dev[i].dev, dev)){
-			snprintf(ssid, slen, "%s", g_ssid_dev[i].ssid);
-			snprintf(portal, plen, "%s", g_ssid_dev[i].portal_url);
+		printf("%s: %d: compare: [s]-%s- [r]-%s-\n", __FUNCTION__, i, g_ssid_dev[i]->dev, dev);
+		if(0 == strcmp(g_ssid_dev[i]->dev, dev)){
+			snprintf(ssid, slen, "%s", g_ssid_dev[i]->ssid);
+			snprintf(portal, plen, "%s", g_ssid_dev[i]->portal_url);
 			printf("%s: get dev=%s, ssid=%s, portal_url=%s\n", __FUNCTION__, dev, ssid, portal);
 			break;
 		}
 	}
 
 	if(!portal[0]){ //must have portal, avoid redirect loop
-		snprintf(portal, plen, "%s", g_ssid_dev[0].portal_url);
+		snprintf(portal, plen, "%s", DEFAULT_PORTAL);
 	}
-
-	if(!portal[0]){ //must have portal, avoid redirect loop
-		snprintf(portal, plen, "%s", "portal-router.test.pengwifi.com/Auth?");
-	}
-
+	printf("=============get portal: %s=====\n", portal);
 	return 0;
 }
 
