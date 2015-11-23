@@ -222,27 +222,27 @@ int resolve_url(char *url, unsigned int addrs[], int addr_cnt)
 }
 
 int parse_bw_array(cJSON *bwlist, struct ssid_dev *node, char *type, char *bwflag)
-{
+{printf("%d\n", __LINE__);
 	int l = 0, i = 0;
 	unsigned char mac[ETH_ALEN];
 	cJSON *json_item, *json_elem;
-	int max = 0;
+	int max = 0;printf("%d\n", __LINE__);
 
 	CHECK_JSON(bwlist, cJSON_Array);
 
 	if(!type || !bwflag || !node){
 		LOG_INFO("%s: arg is null.\n", __FUNCTION__);
 		return -1;	
-	}
+	}printf("%d\n", __LINE__);
 
 	if(!strcmp(type, "sta")){
 		max = sizeof(node->sta_black)/sizeof(node->sta_black[0]);
 	}else if(!strcmp(type, "domain")){
 		max = sizeof(node->domain_black)/sizeof(node->domain_black[0]);
-	}
+	}printf("%d\n", __LINE__);
 
 	l = cJSON_GetArraySize(bwlist);
-	for(i = 0; i < l && i < max; i++){
+	for(i = 0; i < l && i < max; i++){printf("%d\n", __LINE__);
 	
 		json_item = cJSON_GetArrayItem(bwlist, i);
 		CHECK_JSON(json_item, cJSON_Object);
@@ -655,7 +655,7 @@ int build_ssid_dev_table(cJSON *json_data)
 		set_portal_nl(wlans);
 		
 		print_ssid_dev();
-	}
+	}printf("%d\n", __LINE__);
 
 	json_wlan_array = cJSON_GetObjectItem(json_data, "wlan");
 	CHECK_JSON(json_wlan_array, cJSON_Array);
@@ -664,15 +664,15 @@ int build_ssid_dev_table(cJSON *json_data)
 	CHECK_JSON_EASY(json_g_sta_bw, cJSON_Object);
 
 	json_g_dn_bw = cJSON_GetObjectItem(json_data, "global_domain_list");
-	CHECK_JSON_EASY(json_g_dn_bw, cJSON_Object);
+	CHECK_JSON_EASY(json_g_dn_bw, cJSON_Object);printf("%d\n", __LINE__);
 
 	//get_2g_dev_prefix(prefix_2g, sizeof(prefix_2g));
 	//get_5g_dev_prefix(prefix_5g, sizeof(prefix_5g));
 	memset(&g_ssid_dev, 0, MAX_WLAN_COUNT * sizeof(struct ssid_dev));
-	LOG_INFO("g_ssid_dev size = %d\n", MAX_WLAN_COUNT * sizeof(struct ssid_dev));
+	//LOG_INFO("g_ssid_dev size = %d\n", MAX_WLAN_COUNT * sizeof(struct ssid_dev));
 
-	len = cJSON_GetArraySize(json_wlan_array);
-	for(i = 0; i < len; i++){
+	len = cJSON_GetArraySize(json_wlan_array);printf("%d, len=%d\n", __LINE__, len);
+	for(i = 0; i < len; i++){printf("%d\n", __LINE__);
 		int number = -1, radio_type = -1;
 		if(i >= MAX_WLAN_COUNT){
 			LOG_INFO("%s: config wlan size=%d bigger than %d\n", __FUNCTION__, len, MAX_WLAN_COUNT);
@@ -683,7 +683,7 @@ int build_ssid_dev_table(cJSON *json_data)
 		cJSON *json_clist, *json_clist_black, *json_clist_white;
 		cJSON *json_dlist, *json_dlist_black, *json_dlist_white;
 
-		json_item = cJSON_GetArrayItem(json_wlan_array, i);
+		json_item = cJSON_GetArrayItem(json_wlan_array, i);printf("%d\n", __LINE__);
 		CHECK_JSON(json_item, cJSON_Object);
 
 		json_number = cJSON_GetObjectItem(json_item, "number");
@@ -706,25 +706,25 @@ int build_ssid_dev_table(cJSON *json_data)
 		CHECK_JSON_EASY(json_online_time, cJSON_String);
 		json_timeout = cJSON_GetObjectItem(json_item, "flow_off_time");
 		CHECK_JSON_EASY(json_timeout, cJSON_String);
-		json_up_rate = cJSON_GetObjectItem(json_item, "up_rate");
+		json_up_rate = cJSON_GetObjectItem(json_item, "up_rate");printf("%d\n", __LINE__);
 		CHECK_JSON_EASY(json_up_rate, cJSON_String);
 		json_down_rate = cJSON_GetObjectItem(json_item, "down_rate");
 		CHECK_JSON_EASY(json_down_rate, cJSON_String);
 
-		json_clist = cJSON_GetObjectItem(json_item, "client_list");
+		json_clist = cJSON_GetObjectItem(json_item, "client_list");printf("%d\n", __LINE__);
 		CHECK_JSON_EASY(json_clist, cJSON_Object);
 		json_dlist = cJSON_GetObjectItem(json_item, "domain_list");
 		CHECK_JSON_EASY(json_dlist, cJSON_Object);
 
 		if(json_clist){
-			json_clist_black = cJSON_GetObjectItem(json_clist, "black");
-			CHECK_JSON_EASY(json_clist_black, cJSON_Array);
-			json_clist_white = cJSON_GetObjectItem(json_clist, "white");
-			CHECK_JSON_EASY(json_clist_white, cJSON_Array);
+			json_clist_black = cJSON_GetObjectItem(json_clist, "black");printf("%d\n", __LINE__);
+			CHECK_JSON_EASY(json_clist_black, cJSON_Array);printf("%d\n", __LINE__);
+			json_clist_white = cJSON_GetObjectItem(json_clist, "white");printf("%d\n", __LINE__);
+			CHECK_JSON_EASY(json_clist_white, cJSON_Array);printf("%d\n", __LINE__);
 
 			parse_bw_array(json_clist_black, g_ssid_dev[number - 1], "sta", "black");
 			parse_bw_array(json_clist_white, g_ssid_dev[number - 1], "sta", "white");
-		}
+		}printf("%d\n", __LINE__);
 
 		if(json_dlist){
 			json_dlist_black = cJSON_GetObjectItem(json_dlist, "black");
@@ -746,7 +746,7 @@ int build_ssid_dev_table(cJSON *json_data)
 
 			snprintf(wlans[number - 1].portal_url, sizeof(wlans[number - 1].portal_url)-1, "%s", g_ssid_dev[number - 1]->portal_url);
 			memcpy(wlans[number - 1].portal_ipaddr, g_ssid_dev[number - 1]->portal_ipaddr, sizeof(wlans[number - 1].portal_ipaddr));
-		}
+		}printf("%d\n", __LINE__);
 
 		//printf("build ssid-dev: %d %s %s\n", json_number->valueint, g_ssid_dev[json_number->valueint - 1].ssid, g_ssid_dev[json_number->valueint - 1].dev);
 	}
@@ -775,13 +775,13 @@ static int handle_wifi_config(char *msg)
 		return 0;
 	}
 
-#if 0
+#if 1
 	//char *mm="{\"token\":\"123456\",\"account\":\"14:3d:f2:bd:40:bc\",\"function\":\"sendConfig\",\"type\":\"config\","
 	//	"\"subtype\":\"wifi\",\"data\":{\"radio\":{\"2.4g\":[],\"5g\":[]},\"wlan\":[{\"number\":"1",\"radio_type\":"0",\"ssid\":\"pppeeeww\","
 	//	"\"client_list\":{\"black\":[{\"mac\":\"00:11:22:33:44:55\"},{\"mac\":\"11:22:33:66:66:66\"}],\"white\":[{\"mac\":\"00:11:22:33:44:55\"},{\"mac\":\"00:11:22:33:44:55\"}]}}]}}";	
 	
 	FILE *fp = NULL;char mm[4096]={0};
-	fp = fopen("/root/c.json", "r");
+	fp = fopen("/tmp/c.json", "r");
 	if(fp){fread(mm, 1, sizeof(mm)-1, fp);}
 	fclose(fp);
 	json = cJSON_Parse(mm);
@@ -798,7 +798,7 @@ static int handle_wifi_config(char *msg)
 	json_data_radio = cJSON_GetObjectItem(json_data, "radio");
 	CHECK_JSON_EASY(json_data_radio, cJSON_Object);
 
-	LOG_INFO("Parse wifi config success!!!\n");
+	LOG_INFO("---Parse wifi config success!!!---\n");
 	memset(g_ap_last_config, 0, MAX_MSG_SIZE);
 	snprintf(g_ap_last_config, MAX_MSG_SIZE - 1, "%s", msg);
 	build_ssid_dev_table(json_data);//this function must before cJSON_Delete

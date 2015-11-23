@@ -13,6 +13,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/resource.h>
 
 #include "cJSON.h"
 #include "lws_config.h"
@@ -548,6 +549,43 @@ static struct option options[] = {
 	{ NULL, 0, 0, 0 }
 };
 
+int testtack(int num)
+{
+	int buff[num];
+	printf("num is %d\n", num);
+	return 0;
+}
+
+int set_stack_size(void)
+{
+#include <sys/resource.h>
+
+int main (int argc, char **argv)
+{
+    const rlim_t kStackSize = 16 * 1024 * 1024;   // min stack size = 16 MB
+    struct rlimit rl;
+    int result;
+
+    result = getrlimit(RLIMIT_STACK, &rl);
+    if (result == 0)
+    {
+        if (rl.rlim_cur < kStackSize)
+        {
+            rl.rlim_cur = kStackSize;
+            result = setrlimit(RLIMIT_STACK, &rl);
+            if (result != 0)
+            {
+                fprintf(stderr, "setrlimit returned result = %d\n", result);
+            }
+        }
+    }
+
+    // ...
+    //
+    //     return 0;
+    //     }		
+}
+
 
 int main(int argc, char **argv)
 {
@@ -560,6 +598,14 @@ int main(int argc, char **argv)
 	struct lws_context_creation_info info;
 	int svc_cnt = 0;
 	int forground = 0;
+
+	set_stack_size();
+
+	int buflen = 1 * 2024 * 1024;
+	for(;buflen < 8*1024*1024; buflen++)
+		testtack(buflen);
+	printf("hello,world");
+	return 0;
 
 	memset(&info, 0, sizeof info);
 

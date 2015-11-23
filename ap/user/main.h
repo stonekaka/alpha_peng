@@ -79,6 +79,10 @@ struct ssid_dev {
 	unsigned int domain_white_ipaddr[MAX_DN_BW_CNT][8];
 	int sta_timeout;
 	int sta_max_time;
+	int hidden;
+	int enc_type;
+	char enc_key[64];
+	int radio_type;
 };
 
 void
