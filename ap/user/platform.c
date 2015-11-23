@@ -131,7 +131,7 @@ int exec_wlan_config(void)
 #define SAVE_SET       "/etc/scripts/misc/profile.sh put"
 #define ACTIVE_SET     "submit WLAN"
 
-#define DM_SYSTEM(cmd) do{LOG_INFO(cmd);/*system(cmd);*/}while(0)
+#define DM_SYSTEM(cmd) do{LOG_INFO(cmd);LOG_INFO("\n");system(cmd);}while(0)
 
 	int i = 0;
 	int f = 0;

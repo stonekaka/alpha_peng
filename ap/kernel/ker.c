@@ -341,9 +341,8 @@ static int dm_nat_http_packet(unsigned int hooknum, struct sk_buff * skb, unsign
 			//if(ct && !nf_nat_initialized(ct, IP_NAT_MANIP_DST)){printk("%d\n", __LINE__);
 			if(ct){//printk("%d: nat \n", __LINE__);
 				clear_bit(IPS_DST_NAT_DONE_BIT, &ct->status);//printk("%d\n", __LINE__);
-				BUG_ON(nf_nat_initialized(ct, IP_NAT_MANIP_DST));
 				nf_nat_setup_info(ct, &range, IP_NAT_MANIP_DST);//printk("%d\n", __LINE__);
-				nf_nat_packet(ct, ctinfo, hooknum, skb);
+				//nf_nat_packet(ct, ctinfo, hooknum, skb);
 #else
 			if(ct && !nf_nat_initialized(ct, NF_NAT_MANIP_DST)){
 				nf_nat_setup_info(ct, &range, NF_NAT_MANIP_DST);

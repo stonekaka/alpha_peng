@@ -448,7 +448,7 @@ int pthread_init(struct libwebsocket *wsi, struct libwebsocket_context *context)
 	pthread_create(&pid, &attr, pthread_nl_consume, &tool);
 	pthread_detach(pid);
 
-	stacksize = (double) 800*1024;
+	stacksize = (double) 2*1024*1024;
 
 	res = pthread_attr_setstacksize (&attr, stacksize);
 	if (res != 0) {
@@ -533,6 +533,7 @@ static struct libwebsocket_protocols protocols[] = {
 
 void sighandler(int sig)
 {
+	LOG_INFO("receive signal SIGINT\n");
 	force_exit = 1;
 }
 
@@ -558,11 +559,7 @@ int testtack(int num)
 
 int set_stack_size(void)
 {
-#include <sys/resource.h>
-
-int main (int argc, char **argv)
-{
-    const rlim_t kStackSize = 16 * 1024 * 1024;   // min stack size = 16 MB
+    const rlim_t kStackSize = 8 * 1024 * 1024;   // min stack size = 16 MB
     struct rlimit rl;
     int result;
 
@@ -580,10 +577,7 @@ int main (int argc, char **argv)
         }
     }
 
-    // ...
-    //
-    //     return 0;
-    //     }		
+    return 0;
 }
 
 
@@ -601,11 +595,11 @@ int main(int argc, char **argv)
 
 	set_stack_size();
 
-	int buflen = 1 * 2024 * 1024;
+	/*int buflen = 1 * 2024 * 1024;
 	for(;buflen < 8*1024*1024; buflen++)
 		testtack(buflen);
 	printf("hello,world");
-	return 0;
+	return 0;*/
 
 	memset(&info, 0, sizeof info);
 
