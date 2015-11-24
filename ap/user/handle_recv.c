@@ -33,6 +33,7 @@ extern FILE *g_log_fp;
 extern char g_ap_label_mac[];
 
 char *g_ap_last_config;
+struct radio_config radio_2g, radio_5g;
 
 int enqueue_msg(char *msg)
 {
@@ -164,6 +165,83 @@ int send_apinfo_to_ac(char *wsid, char *from)
 		sys_mem_free*1024, sys_mem_use_rate, sys_load, soft_ver, client_list);
 
 	enqueue_msg(msg);			
+
+	return 0;
+}
+
+int set_radio_config(cJSON *radio)
+{
+	cJSON *json_2g, *json_5g;
+	cJSON *json_2g_hwmode, *json_2g_htmode, *json_2g_channel;
+	cJSON *json_2g_txpower, *json_2g_enabled;
+	cJSON *json_5g_hwmode, *json_5g_htmode, *json_5g_channel;
+	cJSON *json_5g_txpower, *json_5g_enabled;
+
+	if(!radio){
+		return -1;	
+	}
+
+	json_2g = cJSON_GetObjectItem(radio, "2.4g");
+	CHECK_JSON_EASY(json_2g, cJSON_Object);
+
+	json_5g = cJSON_GetObjectItem(radio, "5g");
+	CHECK_JSON_EASY(json_5g, cJSON_Object);
+
+	if(json_2g) {
+		json_2g_hwmode = cJSON_GetObjectItem(json_2g, "hwmode");
+		CHECK_JSON_EASY(json_2g_hwmode, cJSON_String);
+		json_2g_htmode = cJSON_GetObjectItem(json_2g, "htmode");
+		CHECK_JSON_EASY(json_2g_htmode, cJSON_String);
+		json_2g_channel = cJSON_GetObjectItem(json_2g, "channel");
+		CHECK_JSON_EASY(json_2g_channel, cJSON_String);
+		json_2g_txpower = cJSON_GetObjectItem(json_2g, "txpower");
+		CHECK_JSON_EASY(json_2g_txpower, cJSON_String);
+		json_2g_enabled = cJSON_GetObjectItem(json_2g, "enabled");
+		CHECK_JSON_EASY(json_2g_enabled, cJSON_String);
+	}
+	
+	if(json_5g) {
+		json_5g_hwmode = cJSON_GetObjectItem(json_5g, "hwmode");
+		CHECK_JSON_EASY(json_5g_hwmode, cJSON_String);
+		json_5g_htmode = cJSON_GetObjectItem(json_5g, "htmode");
+		CHECK_JSON_EASY(json_5g_htmode, cJSON_String);
+		json_5g_channel = cJSON_GetObjectItem(json_5g, "channel");
+		CHECK_JSON_EASY(json_5g_channel, cJSON_String);
+		json_5g_txpower = cJSON_GetObjectItem(json_5g, "txpower");
+		CHECK_JSON_EASY(json_5g_txpower, cJSON_String);
+		json_5g_enabled = cJSON_GetObjectItem(json_5g, "enabled");
+		CHECK_JSON_EASY(json_5g_enabled, cJSON_String);
+	}
+
+	memset(&radio_2g, 0, sizeof(radio_2g));
+	memset(&radio_5g, 0, sizeof(radio_5g));
+	radio_2g.txpower = -1;
+	radio_5g.txpower = -1;
+
+#define JSON2VAL(src, dst) do{if(src)dst=atoi(src->valuestring);}while(0)
+	JSON2VAL(json_2g_hwmode, radio_2g.hwmode);
+	JSON2VAL(json_2g_htmode, radio_2g.htmode);
+	JSON2VAL(json_2g_channel, radio_2g.channel);
+	JSON2VAL(json_2g_txpower, radio_2g.txpower);
+	JSON2VAL(json_2g_enabled, radio_2g.enabled);
+
+	JSON2VAL(json_5g_hwmode, radio_5g.hwmode);
+	JSON2VAL(json_5g_htmode, radio_5g.htmode);
+	JSON2VAL(json_5g_channel, radio_5g.channel);
+	JSON2VAL(json_5g_txpower, radio_5g.txpower);
+	JSON2VAL(json_5g_enabled, radio_5g.enabled);
+
+#if 1
+	LOG_INFO("======== radio config ========");
+	LOG_INFO("2.4g: hwmode=%d, htmode=%d, channel=%d, txpower=%d, enabled=%d\n", 
+		radio_2g.hwmode, radio_2g.htmode, radio_2g.channel, radio_2g.txpower, radio_2g.enabled);
+
+	LOG_INFO("5g: hwmode=%d, htmode=%d, channel=%d, txpower=%d, enabled=%d\n", 
+		radio_5g.hwmode, radio_5g.htmode, radio_5g.channel, radio_5g.txpower, radio_5g.enabled);
+	LOG_INFO("======== ------------ ========");
+#endif
+	
+	exec_radio_config();
 
 	return 0;
 }
@@ -806,12 +884,18 @@ static int handle_wifi_config(char *msg)
 	LOG_INFO("---Parse wifi config success!!!---\n");
 	memset(g_ap_last_config, 0, MAX_MSG_SIZE);
 	snprintf(g_ap_last_config, MAX_MSG_SIZE - 1, "%s", msg);
+
+	if(json_data_radio){
+		set_radio_config(json_data_radio);
+	}
+	
 	build_ssid_dev_table(json_data);//this function must before cJSON_Delete
 
 	cJSON_Delete(json);
 
 	ap_change_state(AP_RESTART_NETWORK);
 	sleep(3);
+	exec_radio_config();
 	exec_wlan_config();
 	exec_blk_wht_list();
 

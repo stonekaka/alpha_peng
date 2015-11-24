@@ -12,6 +12,12 @@
 #include "util.h"
 
 extern struct ssid_dev **g_ssid_dev;
+extern struct radio_config radio_2g, radio_5g;
+
+#define SAVE_SET       "/etc/scripts/misc/profile.sh put"
+#define ACTIVE_SET     "submit WLAN"
+
+#define DM_SYSTEM(cmd) do{LOG_INFO(cmd);LOG_INFO("\n");/*system(cmd);*/}while(0)
 
 int get_wan_mac(char *mac, int len)
 {
@@ -115,11 +121,86 @@ int get_ap_label_mac(char *out, int outlen, int nocol)
 	return 0;
 }*/
 
+
+int exec_radio_config(void)
+{
+#define SET_2G "rgdb -s /wlan/inf:1/"		
+#define SET_5G "rgdb -s /wlan/inf:2/"		
+	char hwmode_str[64] = {0};
+	char htmode_str[64] = {0};
+	char autochannel_str[64] = {0};
+	char channel_str[64] = {0};
+	char txpower_str[64] = {0};
+	char enabled_str[64] = {0};
+
+	snprintf(htmode_str, sizeof(htmode_str)-1, SET_2G"wlmode %d", 1);printf("====%s===\n", htmode_str);
+	if(radio_2g.htmode == 3){
+		snprintf(htmode_str, sizeof(htmode_str)-1, SET_2G"cwmmode %d", 1);
+	}else if(radio_2g.htmode == 2){
+		snprintf(htmode_str, sizeof(htmode_str)-1, SET_2G"cwmmode %d", 2);
+	}else if(radio_2g.htmode == 1){
+		snprintf(htmode_str, sizeof(htmode_str)-1, SET_2G"cwmmode %d", 3);
+	}
+
+	if(radio_2g.channel == 0){
+		snprintf(autochannel_str, sizeof(autochannel_str)-1, SET_2G"autochannel %d", 1);
+	}else if(radio_2g.channel > 0 && radio_2g.channel <= 13){
+		snprintf(autochannel_str, sizeof(autochannel_str)-1, SET_2G"autochannel %d", 0);
+		snprintf(channel_str, sizeof(channel_str)-1, SET_2G"channel %d", radio_2g.channel);
+	}
+
+	if(radio_2g.txpower == 255){//auto txpower
+		snprintf(txpower_str, sizeof(txpower_str)-1, SET_2G"txpower %d", 20);//?????	
+	}else if(radio_2g.txpower >=0 && radio_2g.txpower <= 30){
+		snprintf(txpower_str, sizeof(txpower_str)-1, SET_2G"txpower %d", radio_2g.txpower);
+	}
+
+	snprintf(enabled_str, sizeof(enabled_str)-1, SET_2G"enabled %d", radio_2g.enabled);
+
+	LOG_INFO("set radio 2.4g start...\n");
+	DM_SYSTEM(htmode_str);
+	DM_SYSTEM(autochannel_str);
+	DM_SYSTEM(channel_str);
+	DM_SYSTEM(txpower_str);
+	DM_SYSTEM(enabled_str);
+	LOG_INFO("set radio 2.4g end\n");
+
+	/****start set 5g radio****/
+	memset(autochannel_str, 0, sizeof(autochannel_str));
+	memset(channel_str, 0, sizeof(channel_str));
+	memset(txpower_str, 0, sizeof(txpower_str));
+	memset(enabled_str, 0, sizeof(enabled_str));
+
+	if(radio_5g.channel == 0){
+		snprintf(autochannel_str, sizeof(autochannel_str)-1, SET_5G"autochannel %d", 1);
+	}else if(radio_5g.channel > 0 && radio_5g.channel <= 165){
+		snprintf(autochannel_str, sizeof(autochannel_str)-1, SET_5G"autochannel %d", 0);
+		snprintf(channel_str, sizeof(channel_str)-1, SET_5G"channel %d", radio_5g.channel);
+	}
+
+	if(radio_5g.txpower == 255){//auto txpower
+		snprintf(txpower_str, sizeof(txpower_str)-1, SET_5G"txpower %d", 20);//?????	
+	}else if(radio_5g.txpower >=0 && radio_5g.txpower <= 30){
+		snprintf(txpower_str, sizeof(txpower_str)-1, SET_5G"txpower %d", radio_5g.txpower);
+	}
+	
+	snprintf(enabled_str, sizeof(enabled_str)-1, SET_5G"enabled %d", radio_5g.enabled);
+
+	LOG_INFO("set radio 5g start...\n");
+	DM_SYSTEM(autochannel_str);
+	DM_SYSTEM(channel_str);
+	DM_SYSTEM(txpower_str);
+	DM_SYSTEM(enabled_str);
+	LOG_INFO("set radio 5g end\n");
+
+	//save and active at wlan config
+
+	return 0;
+}
+
 int translate_enctype(int input)
 {
 	int ret = 0;
-
-		
 
 	return ret;
 }
@@ -128,11 +209,6 @@ int exec_wlan_config(void)
 {
 #define SET_WLAN_PRIM  "rgdb -s /wlan/inf:%d/%%s"
 #define SET_WLAN_SUB   "rgdb -s /wlan/inf:%d/multi/index:%d/%%s"
-#define SAVE_SET       "/etc/scripts/misc/profile.sh put"
-#define ACTIVE_SET     "submit WLAN"
-
-#define DM_SYSTEM(cmd) do{LOG_INFO(cmd);LOG_INFO("\n");system(cmd);}while(0)
-
 	int i = 0;
 	int f = 0;
 	int ret = 0;
