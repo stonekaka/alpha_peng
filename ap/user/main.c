@@ -138,11 +138,13 @@ int init_global_mem(void)
 		}
 
 		memset(p, 0, sizeof(struct ssid_dev));
-		snprintf(p->dev, sizeof(p->dev) - 1, "ath%d", i);
+		//snprintf(p->dev, sizeof(p->dev) - 1, "ath%d", i);
 		snprintf(p->portal_url, sizeof(p->portal_url) - 1, "%s", DEFAULT_PORTAL);
 		
 		g_ssid_dev[i] = p;printf("%d:: portal[%d]=%s\n",__LINE__, i, g_ssid_dev[i]->portal_url);
 	}
+
+	init_ssid_ifname();	
 
 	if(NULL == g_ap_last_config){
 		g_ap_last_config = (char *)malloc(MAX_MSG_SIZE);

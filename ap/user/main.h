@@ -103,6 +103,7 @@ int enqueue_r_msg(char *msg);
 
 int exec_wlan_config(void);
 int exec_radio_config(void);
+int init_ssid_ifname(void);
 
 #define LOG_INFO(format, ...) do{fprintf(stdout, format, ##__VA_ARGS__);dm_log_message(1, format, ##__VA_ARGS__);}while(0)
 

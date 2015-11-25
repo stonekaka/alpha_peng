@@ -178,6 +178,7 @@ int set_radio_config(cJSON *radio)
 	cJSON *json_5g_txpower, *json_5g_enabled;
 
 	if(!radio){
+		LOG_INFO("input radio is NULL!\n");
 		return -1;	
 	}
 
@@ -203,8 +204,8 @@ int set_radio_config(cJSON *radio)
 	if(json_5g) {
 		json_5g_hwmode = cJSON_GetObjectItem(json_5g, "hwmode");
 		CHECK_JSON_EASY(json_5g_hwmode, cJSON_String);
-		json_5g_htmode = cJSON_GetObjectItem(json_5g, "htmode");
-		CHECK_JSON_EASY(json_5g_htmode, cJSON_String);
+		//json_5g_htmode = cJSON_GetObjectItem(json_5g, "htmode");
+		//CHECK_JSON_EASY(json_5g_htmode, cJSON_String);
 		json_5g_channel = cJSON_GetObjectItem(json_5g, "channel");
 		CHECK_JSON_EASY(json_5g_channel, cJSON_String);
 		json_5g_txpower = cJSON_GetObjectItem(json_5g, "txpower");
@@ -749,6 +750,8 @@ int build_ssid_dev_table(cJSON *json_data)
 		memset(g_ssid_dev[i], 0, sizeof(struct ssid_dev));	
 	}
 
+	init_ssid_ifname();
+
 	len = cJSON_GetArraySize(json_wlan_array);
 	for(i = 0; i < len; i++){
 		int number = -1;
@@ -756,7 +759,7 @@ int build_ssid_dev_table(cJSON *json_data)
 			LOG_INFO("%s: config wlan size=%d bigger than %d\n", __FUNCTION__, len, MAX_WLAN_COUNT);
 			break;
 		}
-		cJSON *json_item, *json_number, *json_radio, *json_ssid, *json_hidden;
+		cJSON *json_item, *json_number, *json_radio, *json_ssid, *json_hidden, *json_encrypt, *json_encrypt_key;
 		cJSON *json_portal, *json_online_time, *json_timeout, *json_up_rate, *json_down_rate;
 		cJSON *json_clist, *json_clist_black, *json_clist_white;
 		cJSON *json_dlist, *json_dlist_black, *json_dlist_white;
@@ -779,6 +782,10 @@ int build_ssid_dev_table(cJSON *json_data)
 
 		json_hidden = cJSON_GetObjectItem(json_item, "hidden");
 		CHECK_JSON_EASY(json_hidden, cJSON_String);
+		json_encrypt = cJSON_GetObjectItem(json_item, "encrypt");
+		CHECK_JSON_EASY(json_encrypt, cJSON_String);
+		json_encrypt_key = cJSON_GetObjectItem(json_item, "encrypt_key");
+		CHECK_JSON_EASY(json_encrypt_key, cJSON_String);
 		json_portal = cJSON_GetObjectItem(json_item, "portal_url");
 		CHECK_JSON_EASY(json_portal, cJSON_String);
 		json_online_time = cJSON_GetObjectItem(json_item, "online_control_time");
@@ -819,6 +826,12 @@ int build_ssid_dev_table(cJSON *json_data)
 		g_ssid_dev[number - 1]->radio_type = atoi(json_radio->valuestring);
 		if(json_hidden){
 			g_ssid_dev[number - 1]->hidden=atoi(json_hidden->valuestring);	
+		}
+		if(json_encrypt){
+			g_ssid_dev[number - 1]->enc_type = atoi(json_encrypt->valuestring);
+			if(0 != g_ssid_dev[number - 1]->enc_type){
+				snprintf(g_ssid_dev[number - 1]->enc_key, sizeof(g_ssid_dev[number - 1]->enc_key)-1, "%s", json_encrypt_key->valuestring);	
+			}
 		}
 
 		if(json_portal || json_def_portal_val){

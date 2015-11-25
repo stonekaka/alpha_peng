@@ -17,7 +17,18 @@ extern struct radio_config radio_2g, radio_5g;
 #define SAVE_SET       "/etc/scripts/misc/profile.sh put"
 #define ACTIVE_SET     "submit WLAN"
 
-#define DM_SYSTEM(cmd) do{LOG_INFO(cmd);LOG_INFO("\n");/*system(cmd);*/}while(0)
+#define DM_SYSTEM(cmd) do{LOG_INFO(cmd);LOG_INFO("\n");system(cmd);}while(0)
+
+int init_ssid_ifname(void)
+{
+	int i = 0;
+
+	for(i = 0; i < MAX_WLAN_COUNT; i++) {
+		snprintf(g_ssid_dev[i]->dev, sizeof(g_ssid_dev[i]->dev)-1, "ath%d_ath%d_", i, i+16);
+	}	
+
+	return 0;
+}
 
 int get_wan_mac(char *mac, int len)
 {
@@ -202,6 +213,12 @@ int translate_enctype(int input)
 {
 	int ret = 0;
 
+	if(0 == input){
+		ret = 0;
+	}else{
+		ret = 7;
+	}
+
 	return ret;
 }
 
@@ -209,27 +226,64 @@ int exec_wlan_config(void)
 {
 #define SET_WLAN_PRIM  "rgdb -s /wlan/inf:%d/%%s"
 #define SET_WLAN_SUB   "rgdb -s /wlan/inf:%d/multi/index:%d/%%s"
-	int i = 0;
+	int i = 0, j = 0;
 	int f = 0;
 	int ret = 0;
 	char cmd[256] = {0};
 	char prefix[128] = {0};
+	char delete_str[20] = {0};
 	char ssid_str[80] = {0};
 	char hidden_str[20] = {0};
 	char enc_type_str[20] = {0};
 	char enc_value_str[60] = {0};
 	int radio_index = 0;
 
+	LOG_INFO("start disable all ssid ...\n");
 	for(i = 0; i < MAX_WLAN_COUNT; i++){
-		if(0 == i)f = 1;
+		if(0 == i){
+			f = 1;
+		}else{
+			f = 0;
+		}
 
 		memset(prefix, 0, sizeof(prefix));
+		memset(delete_str, 0, sizeof(delete_str));
+
+		for(j = 1; j <= 2; j++){
+			if(f){
+				snprintf(delete_str, sizeof(delete_str)-1, "ssid \"\"");
+				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_PRIM, j);
+
+				snprintf(cmd, sizeof(cmd)-1, prefix, delete_str);
+				DM_SYSTEM(cmd);
+
+				snprintf(delete_str, sizeof(delete_str)-1, "enable %d", 0);
+				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_PRIM, j);
+			}else{
+				snprintf(delete_str, sizeof(delete_str)-1, "state %d", 0);
+				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_SUB, j, i);
+			}
+			snprintf(cmd, sizeof(cmd)-1, prefix, delete_str);
+			DM_SYSTEM(cmd);
+		}
+	}
+
+	LOG_INFO("start config ssid ...\n");
+	for(i = 0; i < MAX_WLAN_COUNT; i++){
+		if(0 == i){
+			f = 1;
+		}else{
+			f = 0;
+		}
+
+		memset(prefix, 0, sizeof(prefix));
+		memset(delete_str, 0, sizeof(delete_str));
 		memset(ssid_str, 0, sizeof(ssid_str));
 		memset(hidden_str, 0, sizeof(hidden_str));
 		memset(enc_type_str, 0, sizeof(enc_type_str));
 		memset(enc_value_str, 0, sizeof(enc_value_str));
 		radio_index = 0;
-
+	
 		if(g_ssid_dev[i]->ssid[0]){
 			if(0 == g_ssid_dev[i]->radio_type){
 				radio_index = 1;
@@ -237,11 +291,17 @@ int exec_wlan_config(void)
 				radio_index = 2;
 			}
 
+			/**do nothing if radio is disable**/
+			if((radio_index == 1 && !radio_2g.enabled) || (radio_index == 2 && !radio_5g.enabled)){
+				continue;
+			}
+
 			snprintf(ssid_str, sizeof(ssid_str)-1, "ssid %s", g_ssid_dev[i]->ssid);
-			snprintf(hidden_str, sizeof(hidden_str)-1, "ssidhidden %d", g_ssid_dev[i]->hidden);
 			if(f){
+				snprintf(hidden_str, sizeof(hidden_str)-1, "ssidhidden %d", g_ssid_dev[i]->hidden);
 				snprintf(enc_type_str, sizeof(enc_type_str)-1, "authentication %d", translate_enctype(g_ssid_dev[i]->enc_type));
 			}else{
+				snprintf(hidden_str, sizeof(hidden_str)-1, "ssid_hidden %d", g_ssid_dev[i]->hidden);
 				snprintf(enc_type_str, sizeof(enc_type_str)-1, "auth %d", translate_enctype(g_ssid_dev[i]->enc_type));
 			}
 			snprintf(enc_value_str, sizeof(enc_value_str), "wpa/wpapsk %s", g_ssid_dev[i]->enc_key);
@@ -262,6 +322,22 @@ int exec_wlan_config(void)
 				snprintf(cmd, sizeof(cmd)-1, prefix, enc_value_str);
 				DM_SYSTEM(cmd);
 			}
+
+			if(f){
+				snprintf(delete_str, sizeof(delete_str)-1, "enable %d", 1);
+				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_PRIM, radio_index);
+			}else{
+				snprintf(delete_str, sizeof(delete_str)-1, "enable %d", 1);
+				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_PRIM, radio_index);
+				snprintf(cmd, sizeof(cmd)-1, prefix, delete_str);
+				DM_SYSTEM(cmd);
+
+				snprintf(delete_str, sizeof(delete_str)-1, "state %d", 1);
+				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_SUB, radio_index, i);
+			}
+			snprintf(cmd, sizeof(cmd)-1, prefix, delete_str);
+			DM_SYSTEM(cmd);
+
 			DM_SYSTEM(SAVE_SET);
 		}
 		
@@ -269,6 +345,7 @@ int exec_wlan_config(void)
 	}
 
 	DM_SYSTEM(ACTIVE_SET);
+	LOG_INFO("end config ssid\n ");
 	
 	return ret;
 }

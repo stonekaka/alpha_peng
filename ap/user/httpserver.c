@@ -92,6 +92,7 @@ int get_staid_by_mac(char *staid, int len, char *mac)
 int get_ssid_portal_by_dev(char *ssid, int slen, char *portal, int plen, char *dev)
 {
 	int i = 0;
+	char ifname[32] = {0};
 
 	if(!ssid || !dev || !portal){
 		LOG_INFO("%d:Error: bad arg\n", __LINE__);
@@ -99,8 +100,9 @@ int get_ssid_portal_by_dev(char *ssid, int slen, char *portal, int plen, char *d
 	}
 
 	for(i = 0; i < MAX_WLAN_COUNT; i++){
-		printf("%s: %d: compare: [s]-%s- [r]-%s-\n", __FUNCTION__, i, g_ssid_dev[i]->dev, dev);
-		if(0 == strcmp(g_ssid_dev[i]->dev, dev)){
+		snprintf(ifname, sizeof(ifname)-1, "%s_", dev);
+		printf("%s: %d: compare: [s]-%s- [r]-%s- [i]-%s-\n", __FUNCTION__, i, g_ssid_dev[i]->dev, dev, ifname);
+		if(strstr(g_ssid_dev[i]->dev, ifname)){
 			snprintf(ssid, slen, "%s", g_ssid_dev[i]->ssid);
 			snprintf(portal, plen, "%s", g_ssid_dev[i]->portal_url);
 			printf("%s: get dev=%s, ssid=%s, portal_url=%s\n", __FUNCTION__, dev, ssid, portal);

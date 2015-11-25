@@ -339,7 +339,7 @@ static int dm_nat_http_packet(unsigned int hooknum, struct sk_buff * skb, unsign
 				(ctinfo == IP_CT_NEW || ctinfo == IP_CT_RELATED));//printk("%d\n", __LINE__);
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,36)
 			//if(ct && !nf_nat_initialized(ct, IP_NAT_MANIP_DST)){printk("%d\n", __LINE__);
-			if(ct){//printk("%d: nat \n", __LINE__);
+			if(ct){printk("%d: nat \n", __LINE__);
 				clear_bit(IPS_DST_NAT_DONE_BIT, &ct->status);//printk("%d\n", __LINE__);
 				nf_nat_setup_info(ct, &range, IP_NAT_MANIP_DST);//printk("%d\n", __LINE__);
 				//nf_nat_packet(ct, ctinfo, hooknum, skb);
@@ -596,7 +596,7 @@ int dm_main_init(void)
 	struct sta_info *sta;
 
 	nf_register_hook(&dmsniff_ops);
-	//nf_register_hook(&dmacl_ops);
+	nf_register_hook(&dmacl_ops);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,38)
     nl_sk = netlink_kernel_create(&init_net, NETLINK_PENGWIFI, 1,
@@ -652,7 +652,7 @@ static void dm_main_exit(void)
 #endif	
 	del_timer(&sta_timer);
 	proc_dm_devices_exit();
-	//nf_unregister_hook(&dmacl_ops);  
+	nf_unregister_hook(&dmacl_ops);  
 	nf_unregister_hook(&dmsniff_ops);  
 
     printk("pengwifi: self module exited\n");
