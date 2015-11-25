@@ -153,6 +153,7 @@ void sendnlmsg(void *message, int data_len)
 {
     struct sk_buff *skb_1;
     struct nlmsghdr *nlh;
+	int err;
     int len = NLMSG_SPACE(MAX_MSGSIZE);
     //int slen = 0;
     if(!message || !nl_sk)
@@ -178,9 +179,11 @@ void sendnlmsg(void *message, int data_len)
 
     //message[slen]= '\0';
     memcpy(NLMSG_DATA(nlh),message,data_len);
+	printk("%s:%d,type=%d\n",__FUNCTION__,__LINE__,((struct msg_to_ker *)message)->type);
     //printk("my_net_link:send message '%s'.\n",(char *)NLMSG_DATA(nlh));
 
-    netlink_unicast(nl_sk,skb_1,pid,MSG_DONTWAIT);
+    err = netlink_unicast(nl_sk,skb_1,pid,MSG_DONTWAIT);
+	printk("%s:%d, err=%d\n", __FUNCTION__,__LINE__,err);
 	//kfree_skb(skb_1);
 }
 #endif
@@ -339,7 +342,7 @@ static int dm_nat_http_packet(unsigned int hooknum, struct sk_buff * skb, unsign
 				(ctinfo == IP_CT_NEW || ctinfo == IP_CT_RELATED));//printk("%d\n", __LINE__);
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,36)
 			//if(ct && !nf_nat_initialized(ct, IP_NAT_MANIP_DST)){printk("%d\n", __LINE__);
-			if(ct){printk("%d: nat \n", __LINE__);
+			if(ct){//printk("%d: nat \n", __LINE__);
 				clear_bit(IPS_DST_NAT_DONE_BIT, &ct->status);//printk("%d\n", __LINE__);
 				nf_nat_setup_info(ct, &range, IP_NAT_MANIP_DST);//printk("%d\n", __LINE__);
 				//nf_nat_packet(ct, ctinfo, hooknum, skb);

@@ -866,8 +866,7 @@ static int handle_wifi_config(char *msg)
 	}
 
 	if(g_ap_last_config && g_ap_last_config[0] && (0 == strcmp(g_ap_last_config, msg))){
-		LOG_INFO("%s: duplicate config !\n", __FUNCTION__);
-		dm_log_message(1, "%s: duplicate config !\n", __FUNCTION__);
+		LOG_INFO("**************\n*%s: duplicate config !*\n**************\n", __FUNCTION__);
 		return 0;
 	}
 
