@@ -25,7 +25,7 @@
 #include "../user/pub.h"
 
 #define PORTAL_PORT   8012
-#define NETLINK_PENGWIFI 25
+#define NETLINK_PENGWIFI 26
 //#define NETLINK_TEST NETLINK_GENERIC
 #define MAX_MSGSIZE 1024
 int stringlength(char *s);
