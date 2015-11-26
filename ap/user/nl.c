@@ -36,6 +36,8 @@ extern int g_state;
 extern int g_connection_flag;
 extern char g_ap_label_mac[];
 
+static int nlpid;
+
 struct __nl_sock_fd{
 	int fd;
 	bool ready;
@@ -63,7 +65,7 @@ int create_nl_msg(struct msghdr *msg, struct iovec *iov, struct sockaddr_nl *des
         return -1;
     }
     nlh->nlmsg_len = NLMSG_SPACE(MAX_PAYLOAD);
-    nlh->nlmsg_pid = getpid(); // self pid
+    nlh->nlmsg_pid = nlpid; // self pid
     nlh->nlmsg_flags = 0;
 	if(msg_body_len > 0 && msg_body){
     	memcpy(NLMSG_DATA(nlh), msg_body, msg_body_len > MAX_PAYLOAD?MAX_PAYLOAD:msg_body_len);
@@ -178,15 +180,17 @@ void *pthread_netlink(void *arg)
         LOG_INFO("error getting socket: %s", strerror(errno));
         return NULL;
     }
+	
+    nlpid = getpid();
 
     // To prepare binding
     memset(&msg,0,sizeof(msg));
     memset(&src_addr, 0, sizeof(src_addr));
     src_addr.nl_family = AF_NETLINK;
-    src_addr.nl_pid = getpid(); // self pid
+    src_addr.nl_pid = nlpid; // self pid
     src_addr.nl_groups = 0; // multi cast
 
-    retval = bind(nl_sock_fd.fd, (struct sockaddr*)&src_addr, sizeof(src_addr));
+    retval = bind(nl_sock_fd.fd, (struct sockaddr*)&src_addr, sizeof(src_addr));printf("========pid=%d\n",src_addr.nl_pid);
     if(retval < 0){
         LOG_INFO("bind failed: %s", strerror(errno));
         close(nl_sock_fd.fd);
