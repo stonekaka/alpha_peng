@@ -290,7 +290,6 @@ int exec_wlan_config(void)
 				radio_index = 1;
 			}else{
 				radio_index = 2;
-				continue;
 			}
 
 			/**do nothing if radio is disable**/
