@@ -8,7 +8,7 @@ LIB_DIR+=-L../../libwebsockets/
 
 all:
 #	${CC} ${CFLAGS} -o nlcli cli.c
-	${CC} ${CFLAGS} -I${INCLUDE_DIR} -DLWS_NO_EXTENSIONS -L${LIB_DIR} -L. -Wl,-rpath=${LIB_DIR} -lwebsockets -lssl -lcrypto -lpthread -lcurl -lm -o pwf main.c cJSON.c nl.c list.c handle_recv.c util.c base64.c platform.c httpserver.c discovery.c log.c
+	${CC} ${CFLAGS} -I${INCLUDE_DIR} -DLWS_NO_EXTENSIONS -L${LIB_DIR} -L. -Wl,-rpath=${LIB_DIR} -lwebsockets -lssl -lcrypto -lpthread -lcurl -lm -o pwf main.c cJSON.c nl.c list.c handle_recv.c util.c base64.c platform.c httpserver.c discovery.c log.c urlcode.c
 #	${CC} ${CFLAGS} -DLWS_NO_EXTENSIONS -L${LIB_DIR} -L. -lwebsockets -lssl -lcrypto -I${INCLUDE_DIR} -I../../../../libwebsockets/ -o tp test-ping.c
 
 clean:

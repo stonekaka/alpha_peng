@@ -14,7 +14,7 @@
 #include "main.h"
 #include "cJSON.h"
 
-extern char g_acname[128];
+extern char *g_acname;
 extern char g_test_acname[128];
 extern char g_acpath[128];
 extern int g_acport;

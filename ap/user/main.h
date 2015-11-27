@@ -61,7 +61,7 @@ pthread_mutex_t mutex_r;
 
 #define CHECK_JSON(_key, _type) do{if(!_key || _key->type != _type){printf("%d: error json type %d\n", __LINE__, _type);return -1;}}while(0)
 #define CHECK_JSONS(_key, _type1, _type2) do{if(!_key || ((_key->type != _type1) && (_key->type != _type2))){printf("%d: error json type %d\n", __LINE__,_type);return -1;}}while(0)
-#define CHECK_JSON_EASY(_key, _type) do{if(_key && _key->type != _type){printf("%d: error json type %d\n", __LINE__, _type);return -1;}}while(0)
+#define CHECK_JSON_EASY(_key, _type) do{if(_key && (_key->type != _type) && (_key->type != cJSON_NULL)){printf("%d: error(easy) json type %d\n", __LINE__, _type);return -1;}}while(0)
 
 struct ssid_dev {
 	char ssid[64];
@@ -104,6 +104,8 @@ int enqueue_r_msg(char *msg);
 int exec_wlan_config(void);
 int exec_radio_config(void);
 int init_ssid_ifname(void);
+
+char *url_encode(char *str);
 
 #define LOG_INFO(format, ...) do{fprintf(stdout, format, ##__VA_ARGS__);dm_log_message(1, format, ##__VA_ARGS__);}while(0)
 

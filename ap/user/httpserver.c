@@ -31,10 +31,11 @@
 #define MAX_CONNECTION 200
 
 extern int g_state;
-extern char g_acname[];
+extern char *g_acname;
 extern struct ssid_dev **g_ssid_dev;
 extern char g_ap_label_mac_nocol[];
 
+extern char g_auth_code[];
 
 int get_user_mac_dev_by_ip(char *ip, char *mac, int maclen, char *dev, int devlen)
 {
@@ -210,8 +211,9 @@ void * pthread_httpserver(void *arg)
 							"Server: %s\r\n"
 							"Content-Type: text/html\r\n"
 							"Connection: keep-alive\r\n"
-							"Location: %swlanuserip=%s&wlanacname=%s&wlanapmac=%s&wlanusermac=%s&ssid=%s\r\n"
-							"\r\n", "pengwifi", portal, staid, g_acname, g_ap_label_mac_nocol/*"14144b60d311"*/, mac, ssid);
+							"Location: %sgw_id=%s&wlanuserip=%s&wlanacname=%s&wlanapmac=%s&wlanusermac=%s&ssid=%s\r\n"
+							"\r\n", "pengwifi", portal, g_auth_code, staid, url_encode(g_acname), g_ap_label_mac_nocol/*"14144b60d311"*/, mac, ssid);
+				LOG_INFO(buf);
 				write(client_sock, buf, strlen(buf));
 				close(client_sock);
 				close(server_sock);

@@ -236,6 +236,7 @@ int exec_wlan_config(void)
 	char hidden_str[20] = {0};
 	char enc_type_str[20] = {0};
 	char enc_value_str[60] = {0};
+	char enc_value_add_str[20] = {0};
 	int radio_index = 0;
 
 	LOG_INFO("start disable all ssid ...\n");
@@ -289,6 +290,7 @@ int exec_wlan_config(void)
 				radio_index = 1;
 			}else{
 				radio_index = 2;
+				continue;
 			}
 
 			/**do nothing if radio is disable**/
@@ -300,11 +302,17 @@ int exec_wlan_config(void)
 			if(f){
 				snprintf(hidden_str, sizeof(hidden_str)-1, "ssidhidden %d", g_ssid_dev[i]->hidden);
 				snprintf(enc_type_str, sizeof(enc_type_str)-1, "authentication %d", translate_enctype(g_ssid_dev[i]->enc_type));
+				if(g_ssid_dev[i]->enc_type){
+					snprintf(enc_value_str, sizeof(enc_value_str), "wpa/wpapsk %s", g_ssid_dev[i]->enc_key);
+				}
 			}else{
 				snprintf(hidden_str, sizeof(hidden_str)-1, "ssid_hidden %d", g_ssid_dev[i]->hidden);
 				snprintf(enc_type_str, sizeof(enc_type_str)-1, "auth %d", translate_enctype(g_ssid_dev[i]->enc_type));
+				if(g_ssid_dev[i]->enc_type){
+					snprintf(enc_value_str, sizeof(enc_value_str)-1, "passphrase %s", g_ssid_dev[i]->enc_key);	
+					snprintf(enc_value_add_str, sizeof(enc_value_add_str)-1, "%s", "passphraseformat 1");	
+				}
 			}
-			snprintf(enc_value_str, sizeof(enc_value_str), "wpa/wpapsk %s", g_ssid_dev[i]->enc_key);
 
 			if(f){
 				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_PRIM, radio_index);
@@ -318,14 +326,14 @@ int exec_wlan_config(void)
 			DM_SYSTEM(cmd);
 			snprintf(cmd, sizeof(cmd)-1, prefix, enc_type_str);
 			DM_SYSTEM(cmd);
-			if(g_ssid_dev[i]->enc_type != 0){
-				snprintf(cmd, sizeof(cmd)-1, prefix, enc_value_str);
-				DM_SYSTEM(cmd);
-			}
 
 			if(f){
 				snprintf(delete_str, sizeof(delete_str)-1, "enable %d", 1);
 				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_PRIM, radio_index);
+				if(g_ssid_dev[i]->enc_type != 0){
+					snprintf(cmd, sizeof(cmd)-1, prefix, enc_value_str);
+					DM_SYSTEM(cmd);
+				}
 			}else{
 				snprintf(delete_str, sizeof(delete_str)-1, "enable %d", 1);
 				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_PRIM, radio_index);
@@ -334,6 +342,13 @@ int exec_wlan_config(void)
 
 				snprintf(delete_str, sizeof(delete_str)-1, "state %d", 1);
 				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_SUB, radio_index, i);
+
+				if(g_ssid_dev[i]->enc_type){
+					snprintf(cmd, sizeof(cmd)-1, prefix, enc_value_str);
+					DM_SYSTEM(cmd);
+					snprintf(cmd, sizeof(cmd)-1, prefix, enc_value_add_str);
+					DM_SYSTEM(cmd);
+				}
 			}
 			snprintf(cmd, sizeof(cmd)-1, prefix, delete_str);
 			DM_SYSTEM(cmd);

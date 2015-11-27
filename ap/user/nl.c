@@ -28,7 +28,7 @@
 
 #define NETLINK_TEST 22
 #define NETLINK_QCAWIFI 23
-#define NETLINK_PENGWIFI 25
+#define NETLINK_PENGWIFI 26
 //#define NETLINK_TEST NETLINK_GENERIC
 #define MAX_PAYLOAD 2048 // maximum payload size
 
@@ -143,7 +143,7 @@ int set_ap_online(int flag)
 	m = (struct msg_to_ker *)malloc(len);
 	if(!m){
 		LOG_INFO("Error: %s malloc failed.\n", __FUNCTION__);
-		return NULL;
+		return -1;
 	}
 	m->type = M2K_APONLINE;
 	m->len = sizeof(int);

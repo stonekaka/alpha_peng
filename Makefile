@@ -21,7 +21,7 @@ install:
 	mkdir -p ${DST_DIR}/usr/sbin/
 	mkdir -p ${DST_DIR}/usr/lib/
 	/bin/cp ap/kernel/pengwifi.ko ${DST_DIR}/lib/modules/
-	/bin/cp ap/kernel/pengwifi ${DST_DIR}/etc/init.d/
+	/bin/cp ap/kernel/S50pengwifi.sh ${DST_DIR}/etc/init.d/
 	/bin/cp ap/user/pwf ${DST_DIR}/usr/sbin/
 	/bin/cp libwebsockets/libwebsockets.so ${DST_DIR}/usr/lib/
 	echo "Install pengwifi success!"

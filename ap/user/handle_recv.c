@@ -33,6 +33,7 @@ extern FILE *g_log_fp;
 extern char g_ap_label_mac[];
 
 char *g_ap_last_config;
+char g_auth_code[65] = "00000";//"4eb44768d1e84d36134a0f4a24d9086d";
 struct radio_config radio_2g, radio_5g;
 
 int enqueue_msg(char *msg)
@@ -858,7 +859,6 @@ static int handle_wifi_config(char *msg)
 	/* Get plain: {"token":"123456","account":"14:3d:f2:bd:40:bc","function":"sendConfig","type":"config","subtype":"wifi","data":{"radio":{"2.4g":[],"5g":[]},"wlan":[]}}*/
 	cJSON *json;	
 	cJSON *json_data, *json_data_radio;
-	cJSON *json_data_radio_2g, *json_data_radio_5g;
 
 	if(!msg){
 		LOG_INFO("%d: arg is null\n", __LINE__);
@@ -870,7 +870,7 @@ static int handle_wifi_config(char *msg)
 		return 0;
 	}
 
-#if 1
+#if 0
 	//char *mm="{\"token\":\"123456\",\"account\":\"14:3d:f2:bd:40:bc\",\"function\":\"sendConfig\",\"type\":\"config\","
 	//	"\"subtype\":\"wifi\",\"data\":{\"radio\":{\"2.4g\":[],\"5g\":[]},\"wlan\":[{\"number\":"1",\"radio_type\":"0",\"ssid\":\"pppeeeww\","
 	//	"\"client_list\":{\"black\":[{\"mac\":\"00:11:22:33:44:55\"},{\"mac\":\"11:22:33:66:66:66\"}],\"white\":[{\"mac\":\"00:11:22:33:44:55\"},{\"mac\":\"00:11:22:33:44:55\"}]}}]}}";	
@@ -956,7 +956,7 @@ static int handle_ac_call(char *wsid, char *from, char *msg)
 		enqueue_msg(tmp);
 		ap_change_state(AP_REBOOTING);
 		
-		//system("sync ;sleep 3 ;reboot");
+		system("sync ;sleep 3 ;reboot");
 	}else{
 
 		snprintf(tmp, sizeof(tmp), "{\"type\":\"router\",\"wsid\":\"%s\",\"from\":\"%s\",\"error\":1,\"data\":{}}",
@@ -972,6 +972,7 @@ static int handle_msg(char *msg)
 	int ret = 0;
 	int len = 0;
 	cJSON *json, *json_type, *json_subtype, *json_data, *json_data_mac, *json_data_action;
+	cJSON *json_auth_code;
 	char *type, *subtype;
 
 	if(!msg){
@@ -999,9 +1000,16 @@ static int handle_msg(char *msg)
 		CHECK_JSON(json_data_action, cJSON_String);
 
 		if(!strcmp("auth_ok", json_data_action->valuestring)){
+			json_auth_code = cJSON_GetObjectItem(json_data,"auth_code");
+			if(json_auth_code){
+				CHECK_JSON(json_auth_code, cJSON_String);
+				snprintf(g_auth_code, sizeof(g_auth_code), "%s", json_auth_code->valuestring);
+			}
+			
 			ap_change_state(AP_RUNNING);
 		}else if(!strcmp("auth_failed", json_data_action->valuestring)){
 			sleep(30);
+			snprintf(g_auth_code, sizeof(g_auth_code), "%s", "000000");
 			ap_change_state(AP_AUTH_REQ);
 		}
 			

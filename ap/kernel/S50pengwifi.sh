@@ -1,7 +1,9 @@
 #!/bin/sh
 case $1 in
 start)
-	rmmod pengwifi
+#	rmmod pengwifi
+	rgdb -s /wlan/inf:2/enable 0
+	/etc/scripts/misc/profile.sh put;submit WLAN
 	insmod /lib/modules/pengwifi.ko	
 	sleep 1
 	killall pwf
@@ -15,4 +17,4 @@ restart)
 	$0 stop
 	$0 start
 	;;
-
+esac
