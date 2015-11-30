@@ -169,6 +169,13 @@ void *pthread_netlink(void *arg)
 	int nl_type;
     struct iovec iov;
     struct sockaddr_nl dest_addr;
+	struct msg_to_ker *m = NULL;
+	char msgstr[256] = {0};
+	struct sta_ctl sc;
+	struct in_addr in;
+	char s[32] = {0}, ssid[64] = {0}, staid[32] = {0}, tmp_mac[32] = {0}, portal[128]={0};
+	int len = 0;
+				
 
 	LOG_INFO("%s start\n", __FUNCTION__);
 	
@@ -244,13 +251,14 @@ void *pthread_netlink(void *arg)
         if(NETLINK_PENGWIFI == nl_type){
         	char *p = (char *)NLMSG_DATA(msg.msg_iov->iov_base);
         	if(p){
-				struct msg_to_ker *m = NULL;
-				char msg[256] = {0};
-				struct sta_ctl sc;
-				struct in_addr in;
-				char s[32] = {0}, ssid[64] = {0}, staid[16] = {0}, tmp_mac[32] = {0}, portal[128]={0};
-				int len = 0;
-				
+#define MEMSET_STR(str)  do{memset(str, 0, sizeof(str));}while(0);
+				MEMSET_STR(msgstr);
+				MEMSET_STR(s);
+				MEMSET_STR(ssid);
+				MEMSET_STR(staid);
+				MEMSET_STR(tmp_mac);
+				MEMSET_STR(portal);
+
         		LOG_INFO("parse kernel msg\n");
 				len = sizeof(struct msg_to_ker) + sizeof(struct sta_ctl);
 				m = (struct msg_to_ker *)malloc(len);
@@ -271,14 +279,14 @@ void *pthread_netlink(void *arg)
 				if(!ssid[0]){
 					snprintf(ssid, sizeof(ssid)-1, "%s", sc.ifname);
 				}
-				snprintf(msg, sizeof(msg)-1, 
+				snprintf(msgstr, sizeof(msgstr)-1, 
 				          "{\"type\":\"sta_control\",\"subtype\":\"upstream\","
 				          "\"data\":{\"apmac\":\"%s\",\"mac\":\"%02x:%02x:%02x:%02x:%02x:%02x\",\"ip\":\"%s\","
 						  "\"ssid\":\"%s\",\"staid\":\"%s\",\"state\":\"%s\"}}", 
 						  g_ap_label_mac,
 				          sc.mac[0], sc.mac[1], sc.mac[2], sc.mac[3], sc.mac[4], sc.mac[5],
-				          inet_ntoa(in), ssid, staid, s);LOG_INFO("mmm=%s\n", msg);
-				enqueue_msg(msg);
+				          inet_ntoa(in), ssid, staid, s);LOG_INFO("mmm=%s\n", msgstr);
+				enqueue_msg(msgstr);
 				/*msgdata *node = make_node(msg, strlen(msg));
 				pthread_mutex_lock(&mutex);
 				list_add_end(&list_head_send, node);

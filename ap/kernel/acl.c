@@ -235,7 +235,7 @@ unsigned int dmacl(
 #ifdef KER_TEST
 				__be32 ip_portal1, ip_portal2, ip_portal3;
 				ip_portal1 = in_aton("211.161.127.27");
-				ip_portal2 = in_aton("118.144.162.16");
+				ip_portal2 = in_aton("118.144.162.20");
 				ip_portal3 = in_aton("118.144.162.15");
 				if (ip_portal1 == iph->daddr ||
 					ip_portal2 == iph->daddr ||
