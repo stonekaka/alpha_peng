@@ -2,8 +2,9 @@
 case $1 in
 start)
 #	rmmod pengwifi
-	rgdb -s /wlan/inf:2/enable 0
-	/etc/scripts/misc/profile.sh put;submit WLAN
+	rgdb -s /wan/rg/inf:1/mode 2
+	/etc/scripts/misc/profile.sh put;submit WAN
+	ifconfig br0:1 192.168.0.50/24
 	insmod /lib/modules/pengwifi.ko	
 	sleep 1
 	killall pwf

@@ -225,6 +225,7 @@ int translate_enctype(int input)
 int exec_wlan_config(void)
 {
 #define SET_WLAN_PRIM  "rgdb -s /wlan/inf:%d/%%s"
+#define SET_WLAN_SUB_ENABLE   "rgdb -s /wlan/inf:%d/multi/%%s"
 #define SET_WLAN_SUB   "rgdb -s /wlan/inf:%d/multi/index:%d/%%s"
 	int i = 0, j = 0;
 	int f = 0;
@@ -293,9 +294,9 @@ int exec_wlan_config(void)
 			}
 
 			/**do nothing if radio is disable**/
-			if((radio_index == 1 && !radio_2g.enabled) || (radio_index == 2 && !radio_5g.enabled)){
+			/*if((radio_index == 1 && !radio_2g.enabled) || (radio_index == 2 && !radio_5g.enabled)){
 				continue;
-			}
+			}*/
 
 			snprintf(ssid_str, sizeof(ssid_str)-1, "ssid %s", g_ssid_dev[i]->ssid);
 			if(f){
@@ -336,6 +337,11 @@ int exec_wlan_config(void)
 			}else{
 				snprintf(delete_str, sizeof(delete_str)-1, "enable %d", 1);
 				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_PRIM, radio_index);
+				snprintf(cmd, sizeof(cmd)-1, prefix, delete_str);
+				DM_SYSTEM(cmd);
+
+				snprintf(delete_str, sizeof(delete_str)-1, "state %d", 1);
+				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_SUB_ENABLE, radio_index);
 				snprintf(cmd, sizeof(cmd)-1, prefix, delete_str);
 				DM_SYSTEM(cmd);
 
