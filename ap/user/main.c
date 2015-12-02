@@ -402,7 +402,7 @@ void handle_send_to_ac(struct libwebsocket *wsi)
 	}else if(AP_JOIN_S1 == g_state){
 
 		char tmp[512] = {0};
-		char fmt[] = "{\"type\":\"connect\",\"token\":\"12345678\",\"idcode\":\"%s\",\"deviceIp\":\"192.168.3.105\",\"pppoeId\":\"%s\",\"passwd\":\"11111\",\"c_type\":\"router\",\"mac\":\"%s\",\"wifimac\":\"%s\",\"hwtype\":\"DW33D\"}";
+		char fmt[] = "{\"type\":\"connect\",\"token\":\"12345678\",\"idcode\":\"%s\",\"deviceIp\":\"0.0.0.0\",\"pppoeId\":\"%s\",\"passwd\":\"11111\",\"c_type\":\"router\",\"mac\":\"%s\",\"wifimac\":\"%s\",\"hwtype\":\"AP-200\"}";
 
 		snprintf(tmp, sizeof(tmp)-1, fmt, g_ap_label_mac, g_ap_label_mac,
 			g_ap_label_mac, g_ap_label_mac);

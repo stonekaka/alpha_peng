@@ -95,6 +95,7 @@ int get_client_list(char *client_list, int len)
 	while(NULL != fgets(buf, sizeof(buf) - 1, fp)){
 		char mac[32] = {0}, ip[32] = {0}, state[8] = {0}, ifname[32] = {0}, ssid[64] = {0};
 		char tmp[512] = {0};
+		int state_code = -1;
 
 		clear_crlf(buf);
 		n = sscanf(buf, "%s %s %s %s", mac, ip, state, ifname);
@@ -102,9 +103,16 @@ int get_client_list(char *client_list, int len)
 			LOG_INFO("%s: buf error: %s\n", __FUNCTION__, buf);
 		}
 
+		if(!strcmp("A", state)){
+			state_code = 1;
+		}else{
+			state_code = 0;
+		}
+		
+		snprintf(ifname, sizeof(ifname) - 1, "%s_", ifname);
 		for(i = 0; i < MAX_WLAN_COUNT; i++){
 			//printf("%s: %d: compare: %s %s\n", __FUNCTION__, i, g_ssid_dev[i]->dev, dev);
-			if(0 == strcmp(g_ssid_dev[i]->dev, ifname)){
+			if(NULL != strstr(g_ssid_dev[i]->dev, ifname)){
 				snprintf(ssid, len, "%s", g_ssid_dev[i]->ssid);
 				//printf("%s: dev=%s, ssid=%s\n", __FUNCTION__, dev, ssid);
 				break;
@@ -113,8 +121,8 @@ int get_client_list(char *client_list, int len)
 		if(!ssid[0]){
 			snprintf(ssid, len, "%s", ifname);
 		}
-		snprintf(tmp, sizeof(tmp) - 1, "{\"client_mac\":\"%s\",\"client_ip\":\"%s\",\"auth_state\":\"%s\","
-				"\"contain_ssid\":\"%s\"},", mac, ip, state, ssid);
+		snprintf(tmp, sizeof(tmp) - 1, "{\"client_mac\":\"%s\",\"client_ip\":\"%s\",\"auth_state\":\"%d\","
+				"\"contain_ssid\":\"%s\"},", mac, ip, state_code, ssid);
 		wlen += strlen(tmp);		
 		if(wlen < len){
 			strcat(client_list, tmp);
@@ -171,7 +179,7 @@ int send_apinfo_to_ac(char *wsid, char *from)
 }
 
 int set_radio_config(cJSON *radio)
-{
+{LOG_INFO("%s:%d\n", __FUNCTION__, __LINE__);
 	cJSON *json_2g, *json_5g;
 	cJSON *json_2g_hwmode, *json_2g_htmode, *json_2g_channel;
 	cJSON *json_2g_txpower, *json_2g_enabled;
@@ -243,7 +251,7 @@ int set_radio_config(cJSON *radio)
 	LOG_INFO("======== ------------ ========");
 #endif
 	
-	exec_radio_config();
+	exec_radio_config();LOG_INFO("%s:%d\n", __FUNCTION__, __LINE__);
 
 	return 0;
 }
@@ -695,7 +703,7 @@ void print_ssid_dev(void)
 }
 
 int build_ssid_dev_table(cJSON *json_data)
-{
+{LOG_INFO("%s:%d\n", __FUNCTION__, __LINE__);
 	int len = 0;
 	int i = 0;
 	//char prefix_2g[16] = {0}, prefix_5g[16] = {0};
@@ -751,7 +759,7 @@ int build_ssid_dev_table(cJSON *json_data)
 		memset(g_ssid_dev[i], 0, sizeof(struct ssid_dev));	
 	}
 
-	init_ssid_ifname();
+	init_ssid_ifname();LOG_INFO("%s:%d\n", __FUNCTION__, __LINE__);
 
 	len = cJSON_GetArraySize(json_wlan_array);
 	for(i = 0; i < len; i++){
@@ -849,7 +857,7 @@ int build_ssid_dev_table(cJSON *json_data)
 	}
 
 	set_portal_nl(wlans);
-	print_ssid_dev();
+	print_ssid_dev();LOG_INFO("%s:%d\n", __FUNCTION__, __LINE__);
 
 	return 0;
 }
@@ -903,13 +911,13 @@ static int handle_wifi_config(char *msg)
 	
 	build_ssid_dev_table(json_data);//this function must before cJSON_Delete
 
-	cJSON_Delete(json);
-
 	ap_change_state(AP_RESTART_NETWORK);
 	sleep(3);
-	exec_radio_config();
+	//exec_radio_config();
 	exec_wlan_config();
 	exec_blk_wht_list();
+
+	cJSON_Delete(json);
 
 	return 0;
 }
