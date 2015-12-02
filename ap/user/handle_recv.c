@@ -179,7 +179,7 @@ int send_apinfo_to_ac(char *wsid, char *from)
 }
 
 int set_radio_config(cJSON *radio)
-{LOG_INFO("%s:%d\n", __FUNCTION__, __LINE__);
+{
 	cJSON *json_2g, *json_5g;
 	cJSON *json_2g_hwmode, *json_2g_htmode, *json_2g_channel;
 	cJSON *json_2g_txpower, *json_2g_enabled;
@@ -228,7 +228,7 @@ int set_radio_config(cJSON *radio)
 	radio_2g.txpower = -1;
 	radio_5g.txpower = -1;
 
-#define JSON2VAL(src, dst) do{if(src)dst=atoi(src->valuestring);}while(0)
+#define JSON2VAL(src, dst) do{if(src && src->type != cJSON_NULL)dst=atoi(src->valuestring);}while(0)
 	JSON2VAL(json_2g_hwmode, radio_2g.hwmode);
 	JSON2VAL(json_2g_htmode, radio_2g.htmode);
 	JSON2VAL(json_2g_channel, radio_2g.channel);
@@ -251,7 +251,7 @@ int set_radio_config(cJSON *radio)
 	LOG_INFO("======== ------------ ========");
 #endif
 	
-	exec_radio_config();LOG_INFO("%s:%d\n", __FUNCTION__, __LINE__);
+	exec_radio_config();
 
 	return 0;
 }
@@ -703,7 +703,7 @@ void print_ssid_dev(void)
 }
 
 int build_ssid_dev_table(cJSON *json_data)
-{LOG_INFO("%s:%d\n", __FUNCTION__, __LINE__);
+{
 	int len = 0;
 	int i = 0;
 	//char prefix_2g[16] = {0}, prefix_5g[16] = {0};
@@ -759,7 +759,7 @@ int build_ssid_dev_table(cJSON *json_data)
 		memset(g_ssid_dev[i], 0, sizeof(struct ssid_dev));	
 	}
 
-	init_ssid_ifname();LOG_INFO("%s:%d\n", __FUNCTION__, __LINE__);
+	init_ssid_ifname();
 
 	len = cJSON_GetArraySize(json_wlan_array);
 	for(i = 0; i < len; i++){
@@ -857,7 +857,7 @@ int build_ssid_dev_table(cJSON *json_data)
 	}
 
 	set_portal_nl(wlans);
-	print_ssid_dev();LOG_INFO("%s:%d\n", __FUNCTION__, __LINE__);
+	print_ssid_dev();
 
 	return 0;
 }
@@ -1098,7 +1098,6 @@ static int handle_msg(char *msg)
 			LOG_INFO("Get base64: %s\n", json_array_item->valuestring);
 			Base64decode(buf, json_array_item->valuestring);
 			LOG_INFO("Get plain: %s\n", buf);
-			dm_log_message(1, "Get plain: %s\n", buf);
 
 			handle_ac_call(json_wsid->valuestring, json_from->valuestring, buf);
 		}
@@ -1135,7 +1134,6 @@ void *pthread_recv(void *arg)
 					fprintf(stderr, "%d: write error.\n", __LINE__);	
 				}else{
 					LOG_INFO("recv list: key=%d consumed.\n", node->key);
-					dm_log_message(1, "recv list: key=%d consumed.\n", node->key);
 					node->consumed = 1;
 					free_all_consumed_node(&list_head_recv);
 					LOG_INFO("clean result: recv list len = %d\n", list_length(list_head_recv));

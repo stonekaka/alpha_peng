@@ -282,7 +282,6 @@ void handle_ac_msg(struct libwebsocket_context *context, struct libwebsocket *ws
 		LOG_INFO("get config: %s\n", rcv);
 	}else if(!strncmp("{\"type\":\"rest\"", rcv, strlen("{\"type\":\"rest\""))){
 		LOG_INFO("%s: rcv : %s\n", __FUNCTION__, rcv);
-		dm_log_message(1, "%s: rcv : %s\n", __FUNCTION__, rcv);
 		
 		if(g_state < AP_JOIN_OK){
 			cJSON *json;
@@ -310,7 +309,6 @@ void handle_ac_msg(struct libwebsocket_context *context, struct libwebsocket *ws
 		pthread_mutex_unlock(&mutex_r);*/
 	}else{
 		LOG_INFO("%s: rcv unknown: %s\n", __FUNCTION__, rcv);
-		dm_log_message(1, "%s: rcv unknown: %s\n", __FUNCTION__, rcv);
 
 		enqueue_r_msg(rcv);
 		/*msgdata *node = make_node(rcv, strlen(rcv));
