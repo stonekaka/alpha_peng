@@ -370,3 +370,9 @@ int exec_wlan_config(void)
 	return ret;
 }
 
+int get_soft_version(char *ver, int len)
+{
+	//return get_string_from_cmd(ver, len, "cat /version/v.json | awk -F\\\" '{print $20}'");
+	return get_string_from_cmd(ver, len, "cat /etc/config/buildver | awk '{print $1}'");
+}
+

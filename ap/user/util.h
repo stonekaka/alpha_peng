@@ -21,4 +21,5 @@ int get_mem_use_rate(int *rate);
 int get_soft_version(char *ver, int len);
 int get_hash_by_mac(const char *addr, unsigned int *hash);
 void init_daemon(void);
+int get_string_from_cmd(char *result, int len, char *cmd);
 

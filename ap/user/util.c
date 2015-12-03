@@ -214,11 +214,6 @@ int get_cpu_usage(int *cpu_use)
 	return 0;
 }
 
-int get_soft_version(char *ver, int len)
-{
-	return get_string_from_cmd(ver, len, "cat /version/v.json | awk -F\\\" '{print $20}'");
-}
-
 void init_daemon(void)
 {
 	int pid;
