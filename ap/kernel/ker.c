@@ -475,7 +475,7 @@ unsigned int dmsniff(
 		if((STATE_STALE != node->state) && (0 == memcmp(node->mac, eh->h_source, ETH_ALEN)) && 
 			(0 == memcmp(node->ifname, idev->name, IFNAMSIZ))){
 			found = 1;
-			node->timeout = jiffies + 60 * HZ;
+			node->timeout = jiffies + 600 * HZ;
 			n_state = node->state;
 			if(!unlikely(node->ipaddr)){
 				node->ipaddr = iph->saddr;
