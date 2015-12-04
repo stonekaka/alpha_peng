@@ -189,10 +189,6 @@ unsigned int dmacl(
 		return NF_ACCEPT;
 	}
 
-	__be32 in_iii;
-	in_iii = in_aton("192.168.10.211");
-	if(in_iii == iph->saddr)return NF_ACCEPT; 
-
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,31)
 	idev = __dev_get_by_index(sock_net(skb->sk),skb->iif);
 #else

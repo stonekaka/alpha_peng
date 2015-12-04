@@ -433,10 +433,6 @@ unsigned int dmsniff(
 
 	iph = ip_hdr(skb);
 
-	__be32 in_iii;
-	in_iii = in_aton("192.168.10.211");
-	if(in_iii == iph->saddr)return NF_ACCEPT; 
-
 	cret = check_sta_blk_wht(eh->h_source, iph->daddr, skb->dev->name);
 	if(DST_DENY == cret){
 		return NF_DROP;
