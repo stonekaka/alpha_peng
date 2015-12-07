@@ -75,23 +75,23 @@ int check_sta_blk_wht(unsigned char *smac, unsigned int daddr, char *ifname)
 		return -1;	
 	}
 
-	len = strlen(ifname);
+	len = strlen(ifname);__be32 iip;iip=in_aton("43.255.177.55");if(iip==daddr)printk("%d\n",__LINE__);
 
 	read_lock(&g_sta_bw_lock);
 	read_lock(&g_dn_bw_lock);
-	for(i = 0; i < MAX_WLAN_COUNT; i++) {
-		if(!strncmp(ifname, wlan_ifname[i][0], len) || !strncmp(ifname, wlan_ifname[i][1], len)){
+	for(i = 0; i < MAX_WLAN_COUNT; i++) {if(iip==daddr)printk("%d, %s, %s, %s\n",__LINE__, ifname, wlan_ifname[i][0],wlan_ifname[i][1]);
+		if(!strncmp(ifname, wlan_ifname[i][0], len) || !strncmp(ifname, wlan_ifname[i][1], len)){if(iip==daddr)printk("%d\n",__LINE__);
 			dn_head = &dn_bw_table[get_dn_bw_hash(daddr)];
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,38)
-			hlist_for_each_entry_rcu(dn_node, dn_head, hlist) {
+			hlist_for_each_entry_rcu(dn_node, dn_head, hlist) {if(iip==daddr)printk("%d\n",__LINE__);
 #else
-			hlist_for_each_entry_rcu(dn_node, dn_pos, dn_head, hlist) {
+			hlist_for_each_entry_rcu(dn_node, dn_pos, dn_head, hlist) {if(iip==daddr)printk("%d\n",__LINE__);
 #endif
-				if(dn_node->ipaddr == daddr){
+				if(dn_node->ipaddr == daddr){if(iip==daddr)printk("%d\n",__LINE__);
 					if(dn_node->map[0][i]){
 						ret = DST_DENY;
 						break;
-					}else if(dn_node->map[1][i]){
+					}else if(dn_node->map[1][i]){if(iip==daddr)printk("%d\n",__LINE__);
 						ret = DST_ALLOW;
 						break;
 					}

@@ -431,15 +431,6 @@ unsigned int dmsniff(
 		return NF_ACCEPT;
 	}
 
-	iph = ip_hdr(skb);
-
-	cret = check_sta_blk_wht(eh->h_source, iph->daddr, skb->dev->name);
-	if(DST_DENY == cret){
-		return NF_DROP;
-	}else if(IN_WHITE == cret || DST_ALLOW == cret){
-		return NF_ACCEPT;
-	}
-	
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,31)
 	idev = __dev_get_by_index(sock_net(skb->sk),skb->iif);
 #else
@@ -455,6 +446,15 @@ unsigned int dmsniff(
 		return NF_ACCEPT;
 	}
 
+	iph = ip_hdr(skb);__be32 iip;iip=in_aton("43.255.177.55");if(iip==iph->daddr)printk("%d\n",__LINE__);
+
+	cret = check_sta_blk_wht(eh->h_source, iph->daddr, idev->name);
+	if(DST_DENY == cret){
+		return NF_DROP;
+	}else if(IN_WHITE == cret || DST_ALLOW == cret){if(iip==iph->daddr)printk("%d\n",__LINE__);
+		return NF_ACCEPT;
+	}
+	
 	/*start sta check*/	
 	int found = 0;
 	struct msg_to_ker *m;
