@@ -186,8 +186,9 @@ void * pthread_httpserver(void *arg)
 		}
 		
 		char mac[32] = {0}, ifname[32] = {0}, ssid[64] = {0}, portal[128] = {0};
-		char staid[32] = {0};
+		char staid[32] = {0}, split_str[4] = {0};
 		int ret1 = 0, ret2 = 0, ret3 = 0;
+		int plen = 0;
 		client_ip_str = inet_ntoa(client_addr.sin_addr);
 		ret1 = get_user_mac_dev_by_ip(client_ip_str, mac, sizeof(mac) - 1, ifname, sizeof(ifname) - 1);
 		ret2 = get_staid_by_mac(staid, sizeof(staid) - 1, mac);
@@ -195,12 +196,18 @@ void * pthread_httpserver(void *arg)
 		if(ret1 || ret2 || ret3){
 			goto close;
 		}
+
+		plen = strlen(portal);
+		if(plen > 0 && plen < sizeof(portal) && portal[plen - 1] != '?'){
+			snprintf(split_str, sizeof(split_str), "%s", "?");
+		}
+
 		if((pid = fork()) == 0){
 			if(read(client_sock, buf, sizeof(buf) - 1) < 0){
 				perror("read data from client");
 				exit(1);	
 			}
-			printf("%d:buf=%s\n", __LINE__, buf);
+			//printf("%d:buf=%s\n", __LINE__, buf);
 
 			if(strncasecmp(buf, "GET ", 4) == 0
 				|| strncasecmp(buf, "POST ", 5) == 0
@@ -211,9 +218,11 @@ void * pthread_httpserver(void *arg)
 							"Server: %s\r\n"
 							"Content-Type: text/html\r\n"
 							"Connection: keep-alive\r\n"
-							"Location: %sgw_id=%s&wlanuserip=%s&wlanacname=%s&wlanapmac=%s&wlanusermac=%s&ssid=%s\r\n"
-							"\r\n", "pengwifi", portal, g_auth_code, staid, url_encode(g_acname), g_ap_label_mac_nocol/*"14144b60d311"*/, mac, ssid);
-				LOG_INFO(buf);
+							"Location: %s%sgw_id=%s&wlanuserip=%s&wlanacname=%s&wlanapmac=%s&wlanusermac=%s&ssid=%s\r\n"
+							"\r\n", "pengwifi", portal, split_str, g_auth_code, staid, url_encode(g_acname), g_ap_label_mac_nocol, mac, ssid);
+				if(_i && (_i%5 == 0)){
+					LOG_INFO(buf);
+				}
 				write(client_sock, buf, strlen(buf));
 				close(client_sock);
 				close(server_sock);
@@ -223,7 +232,6 @@ void * pthread_httpserver(void *arg)
 		
 		if(_i && (_i%100 == 0)){
 			LOG_INFO("httpserver handle times: %d.\n", _i);
-			dm_log_message(1, "httpserver handle times: %d.\n", _i);
 		}
 close:
 		close(client_sock);
