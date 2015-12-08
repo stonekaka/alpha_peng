@@ -636,18 +636,24 @@ void print_ssid_dev(void)
 	struct in_addr in_ip;
 	unsigned char mac_zero[] = {0,0,0,0,0,0};
 	struct ssid_dev sz;
-	
+	char buf[2048] = {0};
+	char tmp[256] = {0};
+
+#define SAFE_CAT(buf, tmp) do{if((strlen(buf)+strlen(tmp))<sizeof(buf)){strcat(buf, tmp);}}while(0);
+
 	memset(&sz, 0, sizeof(sz));
 	LOG_INFO("\n======wlan table======\n");
 	for(i = 0; i < MAX_WLAN_COUNT; i++){
-		
+		memset(tmp, 0, sizeof(tmp));
 		if(!memcmp(&g_ssid_dev[i], &sz, sizeof(g_ssid_dev[i]))){
 			continue;
 		}
 
-		LOG_INFO("\n\nssid[%d]: %s\n", i, g_ssid_dev[i]->ssid);
-		LOG_INFO("dev:        %s\n", g_ssid_dev[i]->dev);
-		LOG_INFO("portal_url: %s\n", g_ssid_dev[i]->portal_url);
+		snprintf(tmp, sizeof(tmp)-1, "\n\nssid[%d]: %s\n", i, g_ssid_dev[i]->ssid);SAFE_CAT(buf, tmp);
+		snprintf(tmp, sizeof(tmp)-1, "[dev]:        %s\n", g_ssid_dev[i]->dev);SAFE_CAT(buf, tmp);
+		snprintf(tmp, sizeof(tmp)-1, "[up_rate]: %d  [down_rate]: %d\n", 
+						g_ssid_dev[i]->up_rate, g_ssid_dev[i]->down_rate);SAFE_CAT(buf, tmp);
+		snprintf(tmp, sizeof(tmp)-1, "[portal_url]: %s [ipaddr]:\t", g_ssid_dev[i]->portal_url);SAFE_CAT(buf, tmp);
 		
 		int n = 0;
 		int portal_addr_cnt = sizeof(g_ssid_dev[i]->portal_ipaddr)/sizeof(g_ssid_dev[i]->portal_ipaddr[0]);
@@ -655,51 +661,52 @@ void print_ssid_dev(void)
 			if(!g_ssid_dev[i]->portal_ipaddr[n])continue;
 			memset(&in_ip, 0, sizeof(struct in_addr));
 			in_ip.s_addr = g_ssid_dev[i]->portal_ipaddr[n];
-			LOG_INFO("%s  ", inet_ntoa(in_ip));
+			snprintf(tmp, sizeof(tmp)-1, "%s  ", inet_ntoa(in_ip));SAFE_CAT(buf, tmp);
 		}
 
 		int sta_cnt = sizeof(g_ssid_dev[i]->sta_black)/sizeof(g_ssid_dev[i]->sta_black[0]);
-		LOG_INFO("\nsta black list:\n");
+		SAFE_CAT(buf, "\n[sta black list]:\t");
 		for(n = 0; n < sta_cnt; n++){
 			if(0 == memcmp(g_ssid_dev[i]->sta_black[n], mac_zero, ETH_ALEN))continue;
-			LOG_INFO("%02x:%02x:%02x:%02x:%02x:%02x  ", g_ssid_dev[i]->sta_black[n][0],g_ssid_dev[i]->sta_black[n][1],
+			snprintf(tmp, sizeof(tmp)-1, "%02x:%02x:%02x:%02x:%02x:%02x  ", g_ssid_dev[i]->sta_black[n][0],g_ssid_dev[i]->sta_black[n][1],
 			g_ssid_dev[i]->sta_black[n][2],g_ssid_dev[i]->sta_black[n][3],
-			g_ssid_dev[i]->sta_black[n][4],g_ssid_dev[i]->sta_black[n][5]);
+			g_ssid_dev[i]->sta_black[n][4],g_ssid_dev[i]->sta_black[n][5]);SAFE_CAT(buf, tmp);
 		}
-		LOG_INFO("\nsta white list:\n");
+		SAFE_CAT(buf, "\n[sta white list]:\t");
 		for(n = 0; n < sta_cnt; n++){
 			if(0 == memcmp(g_ssid_dev[i]->sta_white[n], mac_zero, ETH_ALEN))continue;
-			LOG_INFO("%02x:%02x:%02x:%02x:%02x:%02x  ", g_ssid_dev[i]->sta_white[n][0],g_ssid_dev[i]->sta_white[n][1],
+			snprintf(tmp, sizeof(tmp)-1, "%02x:%02x:%02x:%02x:%02x:%02x  ", g_ssid_dev[i]->sta_white[n][0],g_ssid_dev[i]->sta_white[n][1],
 			g_ssid_dev[i]->sta_white[n][2],g_ssid_dev[i]->sta_white[n][3],
-			g_ssid_dev[i]->sta_white[n][4],g_ssid_dev[i]->sta_white[n][5]);
+			g_ssid_dev[i]->sta_white[n][4],g_ssid_dev[i]->sta_white[n][5]);SAFE_CAT(buf, tmp);
 		}
 		
 		int domain_cnt = sizeof(g_ssid_dev[i]->domain_black)/sizeof(g_ssid_dev[i]->domain_black[0]);
-		LOG_INFO("\ndomain black list:\n");
+		SAFE_CAT(buf, "\n[domain black list]:\t");
 		for(n = 0; n < domain_cnt; n++){
 			if(!g_ssid_dev[i]->domain_black[n][0])continue;
-			LOG_INFO("%s ", g_ssid_dev[i]->domain_black[n]);
+			snprintf(tmp, sizeof(tmp)-1, "%s%s ", n?",":"", g_ssid_dev[i]->domain_black[n]);SAFE_CAT(buf, tmp);
 			int m = 0;
 			for(m = 0; m < sizeof(g_ssid_dev[i]->domain_black_ipaddr[0])/sizeof(g_ssid_dev[i]->domain_black_ipaddr[0][0]); m++){
 				if(!g_ssid_dev[i]->domain_black_ipaddr[n][m])continue;
 				memset(&in_ip, 0, sizeof(struct in_addr));
 				in_ip.s_addr = g_ssid_dev[i]->domain_black_ipaddr[n][m];
-				LOG_INFO("%s ", inet_ntoa(in_ip));	
+				snprintf(tmp, sizeof(tmp)-1, "%s ", inet_ntoa(in_ip));SAFE_CAT(buf, tmp);
 			}
 		}
-		LOG_INFO("\ndomain white list:\n");
+		SAFE_CAT(buf, "\n[domain white list]:\t");
 		for(n = 0; n < domain_cnt; n++){
 			if(!g_ssid_dev[i]->domain_white[n][0])continue;
-			LOG_INFO("%s ", g_ssid_dev[i]->domain_white[n]);
+			snprintf(tmp, sizeof(tmp)-1, "%s%s ", n?",":"", g_ssid_dev[i]->domain_white[n]);SAFE_CAT(buf, tmp);
 			int m = 0;
 			for(m = 0; m < sizeof(g_ssid_dev[i]->domain_white_ipaddr[0])/sizeof(g_ssid_dev[i]->domain_white_ipaddr[0][0]); m++){
 				if(!g_ssid_dev[i]->domain_white_ipaddr[n][m])continue;
 				memset(&in_ip, 0, sizeof(struct in_addr));
 				in_ip.s_addr = g_ssid_dev[i]->domain_white_ipaddr[n][m];
-				LOG_INFO("%s ", inet_ntoa(in_ip));
+				snprintf(tmp, sizeof(tmp)-1, "%s ", inet_ntoa(in_ip));SAFE_CAT(buf, tmp);
 			}
 		}
 	}
+	LOG_INFO(buf);
 	LOG_INFO("\n======wlan   end======\n");
 
 	return;
@@ -809,6 +816,14 @@ int build_ssid_dev_table(cJSON *json_data)
 		json_down_rate = cJSON_GetObjectItem(json_item, "down_rate");
 		CHECK_JSON_EASY(json_down_rate, cJSON_String);
 
+		if(json_up_rate && json_up_rate->valuestring){
+			g_ssid_dev[number - 1]->up_rate = atoi(json_up_rate->valuestring);
+		}
+
+		if(json_down_rate && json_down_rate->valuestring){
+			g_ssid_dev[number - 1]->down_rate = atoi(json_down_rate->valuestring);
+		}
+
 		json_clist = cJSON_GetObjectItem(json_item, "client_list");
 		CHECK_JSON_EASY(json_clist, cJSON_Object);
 		json_dlist = cJSON_GetObjectItem(json_item, "domain_list");
@@ -881,7 +896,7 @@ static int handle_wifi_config(char *msg)
 		return 0;
 	}
 
-#if 0
+#if 1
 	//char *mm="{\"token\":\"123456\",\"account\":\"14:3d:f2:bd:40:bc\",\"function\":\"sendConfig\",\"type\":\"config\","
 	//	"\"subtype\":\"wifi\",\"data\":{\"radio\":{\"2.4g\":[],\"5g\":[]},\"wlan\":[{\"number\":"1",\"radio_type\":"0",\"ssid\":\"pppeeeww\","
 	//	"\"client_list\":{\"black\":[{\"mac\":\"00:11:22:33:44:55\"},{\"mac\":\"11:22:33:66:66:66\"}],\"white\":[{\"mac\":\"00:11:22:33:44:55\"},{\"mac\":\"00:11:22:33:44:55\"}]}}]}}";	
@@ -895,7 +910,7 @@ static int handle_wifi_config(char *msg)
 	json = cJSON_Parse(msg);
 #endif
 	if(!json){
-		LOG_INFO("convert msg to json error: %s\n", msg);
+		LOG_INFO("convert msg to json error: %s\n", mm);
 		return -1;
 	}
 	json_data = cJSON_GetObjectItem(json, "data");
@@ -919,6 +934,7 @@ static int handle_wifi_config(char *msg)
 	//exec_radio_config();
 	exec_wlan_config();
 	exec_blk_wht_list();
+	exec_bandwidth_limit();
 
 	cJSON_Delete(json);
 

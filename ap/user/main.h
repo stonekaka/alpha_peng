@@ -79,6 +79,8 @@ struct ssid_dev {
 	unsigned int domain_white_ipaddr[MAX_DN_BW_CNT][8];
 	int sta_timeout;
 	int sta_max_time;
+	int up_rate;
+	int down_rate;
 	int hidden;
 	int enc_type;
 	char enc_key[64];
@@ -103,6 +105,7 @@ int enqueue_r_msg(char *msg);
 
 int exec_wlan_config(void);
 int exec_radio_config(void);
+int exec_bandwidth_limit(void);
 int init_ssid_ifname(void);
 
 char *url_encode(char *str);

@@ -376,3 +376,66 @@ int get_soft_version(char *ver, int len)
 	return get_string_from_cmd(ver, len, "cat /etc/config/buildver | awk '{print $1}'");
 }
 
+int exec_bandwidth_limit(void)
+{
+#define BW_SET_CMD "\
+		rgdb -s /tc_monitor/state 1;\
+		rgdb -s /tc_monitor/mssid:%d/name ath%d;\
+		rgdb -s /tc_monitor/mssid:%d/nameindex %d;\
+		rgdb -s /tc_monitor/mssid:%d/band 0;\
+		rgdb -s /tc_monitor/mssid:%d/state 4;\
+		rgdb -s /tc_monitor/mssid:%d/downrate %d;\
+		rgdb -s /tc_monitor/mssid:%d/uprate %d;\
+		rgdb -s /tc_monitor/mssid:%d/upratetype 1;\
+		rgdb -s /tc_monitor/mssid:%d/downratetype 1;\
+		 /etc/scripts/misc/profile.sh put;\
+		 submit QOS_TC_TM\
+		"
+#define  BW_CLEAR_CMD "rgdb -s /tc_monitor/mssid:%d/state 0"
+
+	int i = 0;
+	char cmd[512] = {0};
+	int mid = 0, athid = 0;
+	
+	/*
+	 *[mssid:x]:
+	 *  1~8  map to  ath0~ath7
+	 *  9~16 map to  ath16~ath23
+	 *
+	 */
+
+	for(i = 0; i < MAX_WLAN_COUNT; i++){
+		mid = i+1;
+		snprintf(cmd, sizeof(cmd)-1, BW_CLEAR_CMD, mid);
+		DM_SYSTEM(cmd);
+		mid = i+1+8;
+		snprintf(cmd, sizeof(cmd)-1, BW_CLEAR_CMD, mid);
+		DM_SYSTEM(cmd);
+	}
+
+	for(i = 0; i < MAX_WLAN_COUNT; i++){
+		if(g_ssid_dev[i]->up_rate == 0 && g_ssid_dev[i]->up_rate == 0)continue;
+
+		if(0 == g_ssid_dev[i]->radio_type){
+			mid = i+1;
+			athid = i;
+		}else{
+			mid = i+1+8;
+			athid = i+1+16;
+		}
+
+		snprintf(cmd, sizeof(cmd)-1, BW_SET_CMD, 
+						mid, athid,
+						mid, athid,
+						mid,
+						mid,
+						mid, g_ssid_dev[i]->up_rate*8, 
+						mid, g_ssid_dev[i]->down_rate*8,
+						mid,
+						mid);
+		DM_SYSTEM(cmd);
+	}
+
+	return 0;
+}
+
