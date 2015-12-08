@@ -1055,6 +1055,8 @@ static int handle_msg(char *msg)
 		}else if(!strcmp("kickoff", json_data_action->valuestring)){
 			sc.action = STA_KICKOFF;
 			snprintf(str_state, sizeof(str_state) - 1, "%s", "kickoff_ack");
+		}else{
+			snprintf(str_state, sizeof(str_state) - 1, "%s", "unknown");
 		}
 			
 		snprintf(sta_ack_buf, sizeof(sta_ack_buf) - 1, sta_ack_fmt, g_ap_label_mac, 
