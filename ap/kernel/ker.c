@@ -295,6 +295,33 @@ static __be32 get_lan_ipaddr(void)
 	return addr;	
 }
 
+int is_daddr_local(__be32 daddr)
+{
+	int ret = 0;//0-false, 1-true
+		
+	struct net_device *dev;
+	struct in_device *ip;
+	struct in_ifaddr *in;
+
+	if((dev = dev_get_by_name(&init_net, "br0")) == NULL){
+		printk("get dev br0 error.\n");
+		return 0;
+	}
+	
+	ip = dev->ip_ptr;
+	in = ip->ifa_list;
+	while(in != NULL){
+		if(daddr == in->ifa_address){
+			ret = 1;
+			break;
+		}
+		in = in->ifa_next;
+	}	
+	dev_put(dev);
+	
+	return ret;
+}
+
 static int dm_nat_http_packet(unsigned int hooknum, struct sk_buff * skb, unsigned char *mac)
 {
 	struct iphdr *iph;
@@ -446,12 +473,16 @@ unsigned int dmsniff(
 		return NF_ACCEPT;
 	}
 
-	iph = ip_hdr(skb);__be32 iip;iip=in_aton("43.255.177.55");if(iip==iph->daddr)printk("%d\n",__LINE__);
+	iph = ip_hdr(skb);
+
+	if(iph && is_daddr_local(iph->daddr)){
+		return NF_ACCEPT;
+	}
 
 	cret = check_sta_blk_wht(eh->h_source, iph->daddr, idev->name);
 	if(DST_DENY == cret){
 		return NF_DROP;
-	}else if(IN_WHITE == cret || DST_ALLOW == cret){if(iip==iph->daddr)printk("%d\n",__LINE__);
+	}else if(IN_WHITE == cret || DST_ALLOW == cret){
 		return NF_ACCEPT;
 	}
 	

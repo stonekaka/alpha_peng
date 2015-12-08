@@ -881,7 +881,7 @@ static int handle_wifi_config(char *msg)
 		return 0;
 	}
 
-#if 1
+#if 0
 	//char *mm="{\"token\":\"123456\",\"account\":\"14:3d:f2:bd:40:bc\",\"function\":\"sendConfig\",\"type\":\"config\","
 	//	"\"subtype\":\"wifi\",\"data\":{\"radio\":{\"2.4g\":[],\"5g\":[]},\"wlan\":[{\"number\":"1",\"radio_type\":"0",\"ssid\":\"pppeeeww\","
 	//	"\"client_list\":{\"black\":[{\"mac\":\"00:11:22:33:44:55\"},{\"mac\":\"11:22:33:66:66:66\"}],\"white\":[{\"mac\":\"00:11:22:33:44:55\"},{\"mac\":\"00:11:22:33:44:55\"}]}}]}}";	
@@ -895,7 +895,7 @@ static int handle_wifi_config(char *msg)
 	json = cJSON_Parse(msg);
 #endif
 	if(!json){
-		LOG_INFO("convert msg to json error: %s\n", mm);
+		LOG_INFO("convert msg to json error: %s\n", msg);
 		return -1;
 	}
 	json_data = cJSON_GetObjectItem(json, "data");
