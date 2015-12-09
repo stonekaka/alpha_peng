@@ -1080,7 +1080,9 @@ static int handle_msg(char *msg)
 			
 		snprintf(sta_ack_buf, sizeof(sta_ack_buf) - 1, sta_ack_fmt, g_ap_label_mac, 
 			json_data_mac->valuestring, str_state);
-		enqueue_msg(sta_ack_buf);
+		if(0 != strcmp(str_state, "unknown")){
+			enqueue_msg(sta_ack_buf);
+		}
 
 		if(sc.action){
 			len = sizeof(struct msg_to_ker) + sizeof(sc);
