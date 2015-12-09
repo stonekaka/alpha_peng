@@ -94,7 +94,7 @@ int get_client_list(char *client_list, int len)
 
 	while(NULL != fgets(buf, sizeof(buf) - 1, fp)){
 		char mac[32] = {0}, ip[32] = {0}, state[8] = {0}, ifname[32] = {0}, ssid[64] = {0};
-		char tmp[512] = {0}, upbytes[8] = {0}, upbytes_g[8] = {0}, downbytes[8] = {0}, downbytes_g[8] = {0};
+		char tmp[512] = {0}, upbytes[65] = {0}, upbytes_g[65] = {0}, downbytes[65] = {0}, downbytes_g[65] = {0};
 		int state_code = -1;
 
 		clear_crlf(buf);
