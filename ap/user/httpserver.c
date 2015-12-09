@@ -102,11 +102,11 @@ int get_ssid_portal_by_dev(char *ssid, int slen, char *portal, int plen, char *d
 
 	for(i = 0; i < MAX_WLAN_COUNT; i++){
 		snprintf(ifname, sizeof(ifname)-1, "%s_", dev);
-		printf("%s: %d: compare: [s]-%s- [r]-%s- [i]-%s-\n", __FUNCTION__, i, g_ssid_dev[i]->dev, dev, ifname);
+		//printf("%s: %d: compare: [s]-%s- [r]-%s- [i]-%s-\n", __FUNCTION__, i, g_ssid_dev[i]->dev, dev, ifname);
 		if(strstr(g_ssid_dev[i]->dev, ifname)){
 			snprintf(ssid, slen, "%s", g_ssid_dev[i]->ssid);
 			snprintf(portal, plen, "%s", g_ssid_dev[i]->portal_url);
-			printf("%s: get dev=%s, ssid=%s, portal_url=%s\n", __FUNCTION__, dev, ssid, portal);
+			//printf("%s: get dev=%s, ssid=%s, portal_url=%s\n", __FUNCTION__, dev, ssid, portal);
 			break;
 		}
 	}
@@ -114,7 +114,7 @@ int get_ssid_portal_by_dev(char *ssid, int slen, char *portal, int plen, char *d
 	if(!portal[0]){ //must have portal, avoid redirect loop
 		snprintf(portal, plen, "%s", DEFAULT_PORTAL);
 	}
-	printf("=============get portal: %s=====\n", portal);
+	//printf("=============get portal: %s=====\n", portal);
 	return 0;
 }
 

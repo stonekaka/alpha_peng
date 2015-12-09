@@ -34,6 +34,7 @@ extern int g_bridge_mode;
 extern rwlock_t g_table_lock;
 extern struct hlist_head sta_table[STA_HASH_SIZE];
 
+#define IFNAME_FMT "athxx"
 char *wlan_ifname[MAX_WLAN_COUNT][2]={{"ath0","ath16"},{"ath1","ath17"},{"ath2","ath18"},{"ath3","ath19"},{"ath4","ath20"},{"ath5","ath21"}};
 struct wlan_arg wlans[MAX_WLAN_COUNT];
 
@@ -75,7 +76,7 @@ int check_sta_blk_wht(unsigned char *smac, unsigned int daddr, char *ifname)
 		return -1;	
 	}
 
-	len = strlen(ifname);
+	len = strlen(IFNAME_FMT);
 
 	read_lock(&g_sta_bw_lock);
 	read_lock(&g_dn_bw_lock);
