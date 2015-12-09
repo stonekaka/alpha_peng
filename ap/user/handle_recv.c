@@ -80,7 +80,7 @@ int get_run_state(int *state)
 int get_client_list(char *client_list, int len)
 {
 	/*{"client_mac":"","client_ip":"","auth_state":"","contain_ssid":""},{},{}*/
-	char *cmd = "cat /proc/pengwifi/stas | grep -v MAC | awk '{print $2,$3,$4,$5}'";
+	char *cmd = "cat /proc/pengwifi/stas | grep -v MAC | awk '{print $2,$3,$4,$5,$6,$7,$8,$9}'";
 	char buf[256] = {0};
 	FILE *fp = NULL;
 	int n = 0, i = 0;
@@ -94,14 +94,15 @@ int get_client_list(char *client_list, int len)
 
 	while(NULL != fgets(buf, sizeof(buf) - 1, fp)){
 		char mac[32] = {0}, ip[32] = {0}, state[8] = {0}, ifname[32] = {0}, ssid[64] = {0};
-		char tmp[512] = {0};
+		char tmp[512] = {0}, upbytes[8] = {0}, upbytes_g[8] = {0}, downbytes[8] = {0}, downbytes_g[8] = {0};
 		int state_code = -1;
 
 		clear_crlf(buf);
-		n = sscanf(buf, "%s %s %s %s", mac, ip, state, ifname);
+		n = sscanf(buf, "%s\t%s\t%s\t%s\t%s\t\t%s\t%s\t\t%s", mac, ip, state, ifname,
+						upbytes, upbytes_g, downbytes, downbytes_g);
 		if(n != 4){
 			LOG_INFO("%s: buf error: %s\n", __FUNCTION__, buf);
-		}
+		}printf("downbytes=%s\n", downbytes);
 
 		if(!strcmp("A", state)){
 			state_code = 1;
@@ -122,7 +123,9 @@ int get_client_list(char *client_list, int len)
 			snprintf(ssid, len, "%s", ifname);
 		}
 		snprintf(tmp, sizeof(tmp) - 1, "{\"client_mac\":\"%s\",\"client_ip\":\"%s\",\"auth_state\":\"%d\","
-				"\"contain_ssid\":\"%s\"},", mac, ip, state_code, ssid);
+				"\"contain_ssid\":\"%s\", \"up_flow\":\"%s\", \"up_gflow\":\"%s\", \"down_flow\":\"%s\", \"down_gflow\":\"%s\"},", 
+				mac, ip, state_code, ssid,
+				upbytes, upbytes_g, downbytes, downbytes_g);
 		wlen += strlen(tmp);		
 		if(wlen < len){
 			strcat(client_list, tmp);
@@ -896,7 +899,7 @@ static int handle_wifi_config(char *msg)
 		return 0;
 	}
 
-#if 1
+#if 0
 	//char *mm="{\"token\":\"123456\",\"account\":\"14:3d:f2:bd:40:bc\",\"function\":\"sendConfig\",\"type\":\"config\","
 	//	"\"subtype\":\"wifi\",\"data\":{\"radio\":{\"2.4g\":[],\"5g\":[]},\"wlan\":[{\"number\":"1",\"radio_type\":"0",\"ssid\":\"pppeeeww\","
 	//	"\"client_list\":{\"black\":[{\"mac\":\"00:11:22:33:44:55\"},{\"mac\":\"11:22:33:66:66:66\"}],\"white\":[{\"mac\":\"00:11:22:33:44:55\"},{\"mac\":\"00:11:22:33:44:55\"}]}}]}}";	
