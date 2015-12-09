@@ -104,6 +104,10 @@ struct sta_info {
 	int state;
 	unsigned long timeout;
 	char ifname[IFNAMSIZ];
+	unsigned long upbytes;
+	unsigned long downbytes;
+	unsigned long upbytes_g;
+	unsigned long downbytes_g;
 };
 
 struct sta_blk_wht{

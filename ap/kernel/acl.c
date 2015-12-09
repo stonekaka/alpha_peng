@@ -201,6 +201,18 @@ unsigned int dmacl(
 	}
 	
 	if(0 == strncmp(idev->name, "eth", 3)){
+		read_lock(&g_table_lock);
+		head = &sta_table[get_sta_hash(eh->h_dest)];
+		hlist_for_each_entry_rcu(node, pos, head, hlist) {
+			if(0 == memcmp(node->mac, eh->h_dest, ETH_ALEN)){
+				node->downbytes += skb->len;
+				if(node->downbytes > 1073741824){
+					node->downbytes = 0;
+					node->downbytes_g += 1;
+				}
+			}
+		}
+		read_unlock(&g_table_lock);
 		return NF_ACCEPT;
 	}
 
@@ -227,6 +239,11 @@ unsigned int dmacl(
 		if(0 == memcmp(node->mac, eh->h_source, ETH_ALEN)){
 			if((node->state == STATE_AUTHED) || (node->state == STATE_IN_WHITE)){
 				ret = NF_ACCEPT;	
+				node->upbytes += skb->len;
+				if(node->upbytes > 1073741824){
+					node->upbytes = 0;
+					node->upbytes_g += 1;
+				}
 			}else if(node->state == STATE_IN_PORTAL){
 #ifdef KER_TEST
 				__be32 ip_portal1, ip_portal2, ip_portal3;

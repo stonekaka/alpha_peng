@@ -913,7 +913,7 @@ static int handle_wifi_config(char *msg)
 	json = cJSON_Parse(msg);
 #endif
 	if(!json){
-		LOG_INFO("convert msg to json error: %s\n", mm);
+		LOG_INFO("convert msg to json error: %s\n", msg);
 		return -1;
 	}
 	json_data = cJSON_GetObjectItem(json, "data");
