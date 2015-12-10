@@ -43,6 +43,7 @@ struct sta_ctl{
 #define STA_KICKOFF 3
 #define STA_TIMEOUT 4
 #define STA_INIT    5
+#define STA_UPDATE_INIT    6
 	int action;
 };
 /**/

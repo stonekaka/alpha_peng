@@ -102,6 +102,8 @@ struct sta_info {
 	unsigned char mac[ETH_ALEN];
 	unsigned int ipaddr;
 	int state;
+	int will_timeout;
+	unsigned long pre_timeout;
 	unsigned long timeout;
 	char ifname[IFNAMSIZ];
 	unsigned long upbytes;

@@ -18,6 +18,7 @@
 #include <linux/phy.h>
 #include <linux/netfilter_ipv4.h>
 #include <linux/tcp.h>
+#include <linux/udp.h>
 #include <linux/types.h>
 #include <net/netfilter/nf_nat_core.h>
 
@@ -51,6 +52,20 @@ unsigned char _tmp_mac[ETH_ALEN] = {1,1,1,1,1,1};
 
 unsigned int _tmp_ip = 1;
 #define ANCHOR_IP     _tmp_ip
+
+static inline int have_important_pkt(struct iphdr *iph)
+{
+	struct udphdr *udph;
+
+	if(iph && iph->protocol == IPPROTO_UDP) {
+		udph = (struct udphdr *)((char*)iph + iph->ihl*4);
+		if(udph && (udph->dest == htons(67) || udph->dest == htons(53))) {
+			return 1;
+		}
+	}
+	
+	return 0;
+}
 
 struct msg_to_ker* build_sta_msg(unsigned char *mac, u32 ipaddr, char *ifname, int action)
 {
@@ -125,7 +140,10 @@ static void timer_handler(unsigned long arg)
 			if(!memcmp(ANCHOR_MAC, node->mac, ETH_ALEN)){
 				continue;
 			}
-			if((STATE_STALE != node->state) && time_after(jiffies, node->timeout)){
+			
+			if((1 != node->will_timeout) && time_after(jiffies, node->pre_timeout)){
+				node->will_timeout = 1;
+			}else if((STATE_STALE != node->state) && time_after(jiffies, node->timeout)){
 				printk("Timer: delete %02x:%02x:%02x:%02x:%02x:%02x\n",
 				node->mac[0], node->mac[1], node->mac[2],node->mac[3], node->mac[4], node->mac[5]);
 				node->state = STATE_STALE;
@@ -142,7 +160,7 @@ static void timer_handler(unsigned long arg)
 	write_unlock(&g_table_lock);
 
 	now = jiffies;
-	next = jiffies + 30 * HZ;
+	next = jiffies + 5 * HZ;
 	mod_timer(&sta_timer, next);
 
 	return;
@@ -400,7 +418,6 @@ unsigned int dmsniff(
 {
 	struct ethhdr *eh = NULL;
 	struct iphdr *iph;
-	struct tcphdr *th;
 	//__be32 sip,dip;
 	const unsigned char *smac = NULL;
 	char buf[32] = {0};
@@ -410,6 +427,12 @@ unsigned int dmsniff(
 	int i = 0;
 	int n_state;
 	struct net_device *idev=NULL;
+	int found = 0;
+	int need_reinit = 0;
+	struct msg_to_ker *m;
+	struct hlist_head *head = NULL;
+	struct hlist_node *pos;
+	struct sta_info *node;
 
 	if(unlikely(!skb)) {
 		return NF_ACCEPT;
@@ -487,11 +510,6 @@ unsigned int dmsniff(
 	}
 	
 	/*start sta check*/	
-	int found = 0;
-	struct msg_to_ker *m;
-	struct hlist_head *head = NULL;
-	struct hlist_node *pos;
-	struct sta_info *node;
 	read_lock(&g_table_lock);
 	head = &sta_table[get_sta_hash(eh->h_source)];
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,38)
@@ -502,6 +520,13 @@ unsigned int dmsniff(
 		if((STATE_STALE != node->state) && (0 == memcmp(node->mac, eh->h_source, ETH_ALEN)) && 
 			(0 == memcmp(node->ifname, idev->name, IFNAMSIZ))){
 			found = 1;
+			node->pre_timeout = jiffies + 5 * HZ;
+			if(1 == node->will_timeout){
+				if(have_important_pkt(iph)) {//important pkt means sta access in.
+					node->will_timeout = 0;
+					need_reinit = 1;
+				}
+			}
 			node->timeout = jiffies + 600 * HZ;
 			n_state = node->state;
 			if(!unlikely(node->ipaddr)){
@@ -511,6 +536,7 @@ unsigned int dmsniff(
 		}
 	}
 	read_unlock(&g_table_lock);
+
 	if(0 == found){
 		do_add_sta(eh->h_source, iph->saddr, idev->name);
 		/*snprintf(tmp_str, sizeof(tmp_str)-1, 
@@ -524,6 +550,12 @@ unsigned int dmsniff(
 #endif		
 		free_sta_msg(m);
 	}else if(1 == found){
+		if(1 == need_reinit){
+			m = build_sta_msg(eh->h_source, iph->saddr, idev->name, STA_UPDATE_INIT);
+			sendnlmsg(m, sizeof(struct msg_to_ker)+sizeof(struct sta_ctl));
+			free_sta_msg(m);
+		}
+
 		switch(n_state){
 			case STATE_INIT:
 				result = FLAG_PORTAL;

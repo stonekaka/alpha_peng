@@ -85,7 +85,7 @@ static int stainfo_show(struct seq_file *f, void *v)
 
 	for(i = 0; i < STA_HASH_SIZE; i++) {
 		if(0 == i){
-			seq_printf(f, "HASH\tMAC\t\t\tIP\t\tI|A|U|P|W|B|S\tIFNAME\tUP\t\tUP_G\tDOWN\t\tDOWN_G\n");
+			seq_printf(f, "HASH\tMAC\t\t\tIP\t\tI|A|U|P|W|B|S\tIFNAME\tUP\t\tUP_G\tDOWN\t\tDOWN_G\tW_TOUT\n");
 		}
 		head = &sta_table[i];
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,38)
@@ -97,10 +97,10 @@ static int stainfo_show(struct seq_file *f, void *v)
 				continue;
 			}
 			snprintf(ip_str, 23, "%d.%d.%d.%d", NIPQUAD(node->ipaddr));
-			seq_printf(f, "%d\t%02x:%02x:%02x:%02x:%02x:%02x\t%-15s\t%s\t%s\t%lu\t\t%lu\t%lu\t\t%lu\n", i, 
+			seq_printf(f, "%d\t%02x:%02x:%02x:%02x:%02x:%02x\t%-15s\t%s\t%s\t%lu\t\t%lu\t%lu\t\t%lu\t%d\n", i, 
 			node->mac[0],node->mac[1],node->mac[2],node->mac[3],node->mac[4],node->mac[5],
 			ip_str, get_state_str(state_str, node->state), node->ifname,
-			node->upbytes, node->upbytes_g, node->downbytes, node->downbytes_g);	
+			node->upbytes, node->upbytes_g, node->downbytes, node->downbytes_g, node->will_timeout);	
 		}
 	}
 	read_unlock(&g_table_lock);
