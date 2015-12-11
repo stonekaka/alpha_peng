@@ -95,6 +95,14 @@ struct radio_config {
 	int enabled;
 };
 
+struct ssid_status{
+	char ssid[64];
+	int encrypt;
+	int hidden;
+	int channel;
+	int txpower;
+};
+
 void
 dm_log_message(int priority, const char *format, ...);
 int dm_open_log(void);

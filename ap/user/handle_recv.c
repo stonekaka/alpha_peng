@@ -146,6 +146,38 @@ int get_client_list(char *client_list, int len)
 	return 0;
 }
 
+int send_ssidinfo_to_ac(char *wsid, char *from)
+{
+	char fmt[] = "{\"type\":\"ap_resp\",\"wsid\":\"%s\",\"from\":\"%s\",\"error\":0,\"data\":"
+		"{\"ap_mac\":\"%s\",\"ap_id\":\"%s\",\"wlan\":["
+			"{\"number\":\"1\",\"radio_type\":\"%d\",\"ssid\":\"%s\",\"encrypt\":\"%d\",\"hidden\":\"%d\",\"channel\":\"%d\",\"txpower\":\"%d\"},"
+			"{\"number\":\"2\",\"radio_type\":\"%d\",\"ssid\":\"%s\",\"encrypt\":\"%d\",\"hidden\":\"%d\",\"channel\":\"%d\",\"txpower\":\"%d\"},"
+			"{\"number\":\"3\",\"radio_type\":\"%d\",\"ssid\":\"%s\",\"encrypt\":\"%d\",\"hidden\":\"%d\",\"channel\":\"%d\",\"txpower\":\"%d\"},"
+			"{\"number\":\"4\",\"radio_type\":\"%d\",\"ssid\":\"%s\",\"encrypt\":\"%d\",\"hidden\":\"%d\",\"channel\":\"%d\",\"txpower\":\"%d\"},"
+			"{\"number\":\"5\",\"radio_type\":\"%d\",\"ssid\":\"%s\",\"encrypt\":\"%d\",\"hidden\":\"%d\",\"channel\":\"%d\",\"txpower\":\"%d\"},"
+			"{\"number\":\"6\",\"radio_type\":\"%d\",\"ssid\":\"%s\",\"encrypt\":\"%d\",\"hidden\":\"%d\",\"channel\":\"%d\",\"txpower\":\"%d\"}"
+		"]"
+		"}}";	
+	char msg[1024] = {0};
+	struct ssid_status ssid_list[MAX_WLAN_COUNT];
+
+	memset(ssid_list, 0, sizeof(ssid_list));
+	get_all_ssid_status(ssid_list);
+
+	snprintf(msg, sizeof(msg)-1, fmt, wsid, from, g_ap_label_mac, g_ap_label_mac, 
+		g_ssid_dev[0]->radio_type, ssid_list[0].ssid, ssid_list[0].encrypt, ssid_list[0].hidden, ssid_list[0].channel, ssid_list[0].txpower,
+		g_ssid_dev[1]->radio_type, ssid_list[1].ssid, ssid_list[1].encrypt, ssid_list[1].hidden, ssid_list[1].channel, ssid_list[1].txpower,
+		g_ssid_dev[2]->radio_type, ssid_list[2].ssid, ssid_list[2].encrypt, ssid_list[2].hidden, ssid_list[2].channel, ssid_list[2].txpower,
+		g_ssid_dev[3]->radio_type, ssid_list[3].ssid, ssid_list[3].encrypt, ssid_list[3].hidden, ssid_list[3].channel, ssid_list[3].txpower,
+		g_ssid_dev[4]->radio_type, ssid_list[4].ssid, ssid_list[4].encrypt, ssid_list[4].hidden, ssid_list[4].channel, ssid_list[4].txpower,
+		g_ssid_dev[5]->radio_type, ssid_list[5].ssid, ssid_list[5].encrypt, ssid_list[5].hidden, ssid_list[5].channel, ssid_list[5].txpower
+		);
+
+	enqueue_msg(msg);			
+
+	return 0;
+}
+
 int send_apinfo_to_ac(char *wsid, char *from)
 {
 	char fmt[] = "{\"type\":\"ap_resp\",\"wsid\":\"%s\",\"from\":\"%s\",\"error\":0,\"data\":"
@@ -981,6 +1013,7 @@ static int handle_ac_call(char *wsid, char *from, char *msg)
 		send_apinfo_to_ac(wsid, from);		
 
 	}else if(!strcmp(json_type->valuestring, "getSsidInfo")){
+		send_ssidinfo_to_ac(wsid, from);
 
 	}else if(!strcmp(json_type->valuestring, "reboot")){
 		enqueue_msg(tmp);

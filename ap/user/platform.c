@@ -13,6 +13,7 @@
 
 extern struct ssid_dev **g_ssid_dev;
 extern struct radio_config radio_2g, radio_5g;
+char *g_wlan_ifname[MAX_WLAN_COUNT][2]={{"ath0","ath16"},{"ath1","ath17"},{"ath2","ath18"},{"ath3","ath19"},{"ath4","ath20"},{"ath5","ath21"}};
 
 #define SAVE_SET       "/etc/scripts/misc/profile.sh put"
 #define ACTIVE_SET     "submit WLAN"
@@ -436,6 +437,77 @@ int exec_bandwidth_limit(void)
 		DM_SYSTEM(cmd);
 	}
 
+	return 0;
+}
+
+int get_ssid_status(char *ifname, struct ssid_status *node)
+{
+	struct freq_s{
+		int channel;
+		char freq[8];
+	}freq_list[]={{1,"2.412"},{2,"2.417"},{3,"2.422"},{4,"2.427"},{5,"2.432"},
+	{6,"2.437"},{7,"2.442"},{8,"2.447"},{9,"2.452"},{10,"2.457"},{11,"2.462"},
+	{36,"5.18"},{40,"5.2"},{44,"5.22"},{48,"5.24"},{149,"5.745"},{153,"5.765"},{157,"5.785"},
+	{161,"5.805"},{165,"5.825"}};
+	int i = 0;
+	char fmt_ssid[] = "iwconfig %s | grep ESSID | awk -F\\\" '{print $2}'";
+	char fmt_channel[] = "iwconfig %s | grep Frequency | awk '{print $2}' | awk -F: '{print $2}'";
+	char fmt_txpower[] = "iwconfig %s | grep Tx-Power | awk '{print $4}' | awk -F: '{print $2}'"; 
+	char fmt_encrypt[] = "iwconfig %s | grep \"Encryption key\" | awk '{print $2}'";
+	char cmd[128] = {0};
+	char ssid[64] = {0};
+	char freq[32] = {0};
+	int channel = 0;
+	int txpower = 0;
+	char encrypt_str[64] = {0};
+	int encrypt_type = 0;
+
+	if(!ifname){
+		return -1;
+	}
+
+	snprintf(cmd, sizeof(cmd) - 1, fmt_ssid, ifname);
+	get_string_from_cmd(ssid, sizeof(ssid) - 1, cmd);
+	snprintf(node->ssid, sizeof(node->ssid)-1, "%s", ssid);
+
+	snprintf(cmd, sizeof(cmd) - 1, fmt_channel, ifname);
+	get_string_from_cmd(freq, sizeof(freq) - 1, cmd);
+	printf("%s", freq);
+	for(i = 0; i < sizeof(freq_list)/sizeof(struct freq_s); i++) {
+		if(0 == strcmp(freq, freq_list[i].freq)){
+			node->channel = freq_list[i].channel;
+			break;	
+		}
+	}
+
+	snprintf(cmd, sizeof(cmd) - 1, fmt_txpower, ifname);
+	get_int_from_cmd(&txpower, cmd);
+	printf("%d", txpower);
+	node->txpower = txpower;
+
+	snprintf(cmd, sizeof(cmd) - 1, fmt_encrypt, ifname);
+	get_string_from_cmd(encrypt_str, sizeof(encrypt_str) - 1, cmd);
+	if(NULL == strstr(encrypt_str, "key:off")){
+		node->encrypt = 5;
+	}else{
+		node->encrypt = 0;
+	}
+
+	return 0;
+}
+
+int get_all_ssid_status(struct ssid_status *ssid_list)
+{
+	int i = 0;
+
+	for(i = 0; i < MAX_WLAN_COUNT; i++){
+		if(g_ssid_dev[i]->radio_type == 0){
+			get_ssid_status(g_wlan_ifname[i][0], &ssid_list[i]);
+		}else{
+			get_ssid_status(g_wlan_ifname[i][1], &ssid_list[i]);
+		}
+		ssid_list[i].hidden = g_ssid_dev[i]->hidden;
+	}
 	return 0;
 }
 
