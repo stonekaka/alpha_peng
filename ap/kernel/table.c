@@ -27,6 +27,8 @@ extern rwlock_t g_sta_bw_lock;
 extern struct hlist_head sta_bw_table[STA_HASH_SIZE];
 extern rwlock_t g_dn_bw_lock;
 extern struct hlist_head dn_bw_table[STA_HASH_SIZE];
+extern char *wlan_ifname[MAX_WLAN_COUNT][2];
+extern struct wlan_arg wlans[MAX_WLAN_COUNT];
 
 int add_sta(struct sta_info *sta)
 {
@@ -154,8 +156,11 @@ int del_all_sta(void)
 int do_add_sta(unsigned char *mac, unsigned int ipaddr, char *ifname)
 {
 	int ret = 0;
+	int i = 0;
 	struct sta_info *tmp;
-	
+	int timeout_tmp = 0;
+	int maxtime_tmp = 0;
+
 	if(!mac || !ifname){
 		printk("mac is null.");
 		return -1;
@@ -165,7 +170,7 @@ int do_add_sta(unsigned char *mac, unsigned int ipaddr, char *ifname)
 	if(!tmp) {
 		printk("sta: malloc memory failed.");
 		return -1;
-	}	
+	}
 
 	memset(tmp, 0, sizeof(struct sta_info));
 	INIT_HLIST_NODE(&tmp->hlist);
@@ -173,7 +178,17 @@ int do_add_sta(unsigned char *mac, unsigned int ipaddr, char *ifname)
 	memcpy(tmp->mac, mac, ETH_ALEN);
 	tmp->ipaddr = ipaddr;
 	tmp->state = STATE_INIT;
-	tmp->timeout = jiffies + 600 * HZ;
+	for(i = 0; i < MAX_WLAN_COUNT; i++){
+		if(!strcmp(ifname, wlan_ifname[i][0]) || !strcmp(ifname, wlan_ifname[i][1])){
+			timeout_tmp = wlans[i].idle_timeout;
+			maxtime_tmp = wlans[i].max_time;
+			break;
+		}
+	}
+	tmp->config_max_time = maxtime_tmp;
+	tmp->max_time = jiffies + maxtime_tmp?maxtime_tmp:12*3600;
+	tmp->config_timeout = timeout_tmp?timeout_tmp:600;
+	tmp->timeout = jiffies + tmp->config_timeout * HZ;
 	memcpy(tmp->ifname, ifname, IFNAMSIZ);
 	//printk(KERN_ALERT"add: %02x:%02x:%02x:%02x:%02x:%02x", tmp->mac[0], tmp->mac[1],tmp->mac[2],tmp->mac[3],tmp->mac[4],tmp->mac[5]);
 	add_sta(tmp);

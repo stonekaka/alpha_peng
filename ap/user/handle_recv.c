@@ -100,7 +100,7 @@ int get_client_list(char *client_list, int len)
 		clear_crlf(buf);
 		n = sscanf(buf, "%s\t%s\t%s\t%s\t%s\t\t%s\t%s\t\t%s", mac, ip, state, ifname,
 						upbytes, upbytes_g, downbytes, downbytes_g);
-		if(n != 4){
+		if(n != 8){
 			LOG_INFO("%s: buf error: %s\n", __FUNCTION__, buf);
 		}printf("downbytes=%s\n", downbytes);
 
@@ -665,7 +665,7 @@ int exec_blk_wht_list(void)
 	return 0;
 }
 
-void print_ssid_dev(void)
+void print_ssid_dev(struct wlan_arg *wlans)
 {
 	int i = 0;
 	struct in_addr in_ip;
@@ -686,8 +686,10 @@ void print_ssid_dev(void)
 
 		snprintf(tmp, sizeof(tmp)-1, "\n\nssid[%d]: %s\n", i, g_ssid_dev[i]->ssid);SAFE_CAT(buf, tmp);
 		snprintf(tmp, sizeof(tmp)-1, "[dev]:        %s\n", g_ssid_dev[i]->dev);SAFE_CAT(buf, tmp);
+		snprintf(tmp, sizeof(tmp)-1, "[encrypt type]: %d\n", g_ssid_dev[i]->enc_type);SAFE_CAT(buf, tmp);
 		snprintf(tmp, sizeof(tmp)-1, "[up_rate]: %d  [down_rate]: %d\n", 
 						g_ssid_dev[i]->up_rate, g_ssid_dev[i]->down_rate);SAFE_CAT(buf, tmp);
+		snprintf(tmp, sizeof(tmp)-1, "[max_online_time]: %d [idle_timeout]: %d\n", wlans[i].max_time, wlans[i].idle_timeout);SAFE_CAT(buf, tmp);
 		snprintf(tmp, sizeof(tmp)-1, "[portal_url]: %s [ipaddr]:\t", g_ssid_dev[i]->portal_url);SAFE_CAT(buf, tmp);
 		
 		int n = 0;
@@ -787,7 +789,7 @@ int build_ssid_dev_table(cJSON *json_data)
 
 		set_portal_nl(wlans);
 		
-		print_ssid_dev();
+		print_ssid_dev(wlans);
 	}
 
 	json_wlan_array = cJSON_GetObjectItem(json_data, "wlan");
@@ -846,6 +848,21 @@ int build_ssid_dev_table(cJSON *json_data)
 		CHECK_JSON_EASY(json_online_time, cJSON_String);
 		json_timeout = cJSON_GetObjectItem(json_item, "flow_off_time");
 		CHECK_JSON_EASY(json_timeout, cJSON_String);
+
+		if(json_online_time && json_online_time->valuestring){
+			wlans[number - 1].max_time = 60 * atoi(json_online_time->valuestring);
+		}
+
+		if(json_timeout && json_timeout->valuestring){
+			wlans[number - 1].idle_timeout = 60 * atoi(json_timeout->valuestring);
+		}
+
+		if(json_encrypt && json_encrypt->valuestring){
+			if(0 != atoi(json_encrypt->valuestring)){
+				wlans[number - 1].no_portal = 1;
+			}
+		}
+
 		json_up_rate = cJSON_GetObjectItem(json_item, "up_rate");
 		CHECK_JSON_EASY(json_up_rate, cJSON_String);
 		json_down_rate = cJSON_GetObjectItem(json_item, "down_rate");
@@ -910,7 +927,7 @@ int build_ssid_dev_table(cJSON *json_data)
 	}
 
 	set_portal_nl(wlans);
-	print_ssid_dev();
+	print_ssid_dev(wlans);
 
 	return 0;
 }

@@ -105,11 +105,14 @@ struct sta_info {
 	int will_timeout;
 	unsigned long pre_timeout;
 	unsigned long timeout;
-	char ifname[IFNAMSIZ];
+	unsigned long config_timeout;
+	unsigned long max_time;
+	unsigned long config_max_time;
 	unsigned long upbytes;
 	unsigned long downbytes;
 	unsigned long upbytes_g;
 	unsigned long downbytes_g;
+	char ifname[IFNAMSIZ];
 };
 
 struct sta_blk_wht{
@@ -199,6 +202,9 @@ static inline int set_sta_state(const unsigned char *mac, int state)
 #endif
 		if(0 == memcmp(node->mac, mac, ETH_ALEN)){
 			node->state = state;
+			if(STATE_AUTHED == node->state) {printk("node->config_max_time=%lu ==========\n", node->config_max_time);
+				node->max_time = jiffies + node->config_max_time * HZ;printk("node->config_max_time=%lu ,max_time=%lu==========\n", node->config_max_time, node->max_time);
+			}
 			break;
 		}
 	}

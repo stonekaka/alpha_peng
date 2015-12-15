@@ -152,6 +152,14 @@ static void timer_handler(unsigned long arg)
 				sendnlmsg(m, sizeof(struct msg_to_ker)+sizeof(struct sta_ctl));
 #endif
 				free_sta_msg(m);
+			}else if(time_after(jiffies, node->max_time) && (STATE_AUTHED == node->state)){
+				printk("Timer: runout %02x:%02x:%02x:%02x:%02x:%02x, %lu, %lu\n",
+				node->mac[0], node->mac[1], node->mac[2],node->mac[3], node->mac[4], node->mac[5], jiffies, node->max_time);
+				node->state = STATE_UNAUTH;
+				m = build_sta_msg(node->mac, node->ipaddr, node->ifname, STA_TIME_RUNOUT);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,38)
+				sendnlmsg(m, sizeof(struct msg_to_ker)+sizeof(struct sta_ctl));
+#endif
 			}else if((STATE_STALE == node->state) && (time_after(jiffies, node->timeout + 86400))){
 				hlist_del_init_rcu(&node->hlist);
 			}
@@ -281,6 +289,9 @@ void nl_data_ready(struct sk_buff *__skb)
 			for(i = 0; i < MAX_WLAN_COUNT; i++){
 				memcpy(wlans[i].portal_url, w[i].portal_url, sizeof(wlans[i].portal_url));
 				memcpy(wlans[i].portal_ipaddr, w[i].portal_ipaddr, sizeof(wlans[i].portal_ipaddr));
+				wlans[i].no_portal = w[i].no_portal;
+				wlans[i].max_time = w[i].max_time;
+				wlans[i].idle_timeout = w[i].idle_timeout;
 			}
 		}else{
 			printk("kernel rcv other\n");	
@@ -527,7 +538,7 @@ unsigned int dmsniff(
 					need_reinit = 1;
 				}
 			}
-			node->timeout = jiffies + 600 * HZ;
+			node->timeout = jiffies + node->config_timeout * HZ;
 			n_state = node->state;
 			if(!unlikely(node->ipaddr)){
 				node->ipaddr = iph->saddr;

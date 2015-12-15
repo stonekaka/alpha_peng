@@ -73,7 +73,14 @@ int check_sta_blk_wht(unsigned char *smac, unsigned int daddr, char *ifname)
 	struct dn_blk_wht *dn_node;
 
 	if(unlikely(!smac || !ifname)){
-		return -1;	
+		return -1;
+	}
+
+	for(i = 0; i < MAX_WLAN_COUNT; i++) {
+		if(wlans[i].no_portal &&
+			(!strcmp(ifname, wlan_ifname[i][0]) || !strcmp(ifname, wlan_ifname[i][1]))){
+			return IN_WHITE; //this ssid no need redirect to portal.
+		}
 	}
 
 	len = strlen(IFNAME_FMT);

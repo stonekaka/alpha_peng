@@ -44,6 +44,7 @@ struct sta_ctl{
 #define STA_TIMEOUT 4
 #define STA_INIT    5
 #define STA_UPDATE_INIT    6
+#define STA_TIME_RUNOUT    7
 	int action;
 };
 /**/
@@ -74,7 +75,10 @@ struct u_dn_blk_wht{
 struct wlan_arg {
 	//char ifname[IFNAMSIZ];
 	char portal_url[MAX_DOMAIN_LEN];
-	unsigned int portal_ipaddr[8];	
+	unsigned int portal_ipaddr[8];
+	int idle_timeout;  //idle time
+	int max_time;  //max online time
+	int no_portal; //1:yes, 0:no
 };
 
 #endif

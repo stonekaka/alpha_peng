@@ -272,6 +272,8 @@ void *pthread_netlink(void *arg)
 					strcpy(s, "idle_timeout");
 				}else if(STA_UPDATE_INIT == sc.action){
 					strcpy(s, "update_init");
+				}else if(STA_TIME_RUNOUT == sc.action){
+					strcpy(s, "time_runout");
 				}
 
 				snprintf(tmp_mac, sizeof(tmp_mac) - 1, "%02x:%02x:%02x:%02x:%02x:%02x", 

@@ -191,10 +191,11 @@ static int portal_proc_show(struct seq_file *f, void *v)
 
 	n = sizeof(wlans[0].portal_ipaddr)/sizeof(wlans[0].portal_ipaddr[0]);
 
+	seq_printf(f, "NUM\tIPADDR              \tPORTAL_URL                     \t\t\tMAXTIME IDLETIME NO_PORTAL\n");
 	for(i = 0; i < MAX_WLAN_COUNT; i++){
 		snprintf(ip_str, 23, "%d.%d.%d.%d", NIPQUAD(wlans[i].portal_ipaddr[0]));
-		seq_printf(f, "%-8d\t%-20s\t%-40s\n", i, ip_str,
-			wlans[i].portal_url);
+		seq_printf(f, "%-2d\t%-20s\t%-40s\t%-8d%-8d%-3d\n", i, ip_str,
+			wlans[i].portal_url, wlans[i].max_time, wlans[i].idle_timeout, wlans[i].no_portal);
 		for(j = 1; j < n; j++){
 			if(!wlans[i].portal_ipaddr[j])continue;
 
