@@ -150,9 +150,10 @@ extern void init_wlan(void);
 #define MAX_MSGSIZE 1024
 struct sock *nl_sk = NULL;
 static int pid;
+int g_probe_flag;
 #define NETLINK_PENGWIFI 27
 
-int stringlength(char *s)
+/*int stringlength(char *s)
 {
     int slen = 0;
 
@@ -161,15 +162,15 @@ int stringlength(char *s)
     }
 
     return slen;
-}
+}*/
 
-void sendnlmsg(char *message)
+void sendnlmsg(void *message, int mlen)
 {
     struct sk_buff *skb_1;
     struct nlmsghdr *nlh;
     int len = NLMSG_SPACE(MAX_MSGSIZE);
-    int slen = 0;
-    if(!message || !nl_sk)
+
+    if(!message || !nl_sk || (mlen == 0))
     {
         return ;
     }
@@ -180,14 +181,14 @@ void sendnlmsg(char *message)
         printk(KERN_ERR "my_net_link:alloc_skb_1 error\n");
     }
     
-    slen = stringlength(message);
+    //slen = stringlength(message);
     nlh = nlmsg_put(skb_1,0,0,0,MAX_MSGSIZE,0);
 
     NETLINK_CB(skb_1).pid = 0;
     NETLINK_CB(skb_1).dst_group = 0;
 
-    message[slen]= '\0';
-    memcpy(NLMSG_DATA(nlh),message,slen+1);
+    //message[slen]= '\0';
+    memcpy(NLMSG_DATA(nlh),message,len+1);
     //printk("my_net_link:send message '%s'.\n",(char *)NLMSG_DATA(nlh));
 
     netlink_unicast(nl_sk,skb_1,pid,MSG_DONTWAIT);
@@ -195,10 +196,19 @@ void sendnlmsg(char *message)
 
 void nl_data_ready(struct sk_buff *__skb)
 {
+	struct msg_to_ker{
+		int type;
+		int len;
+		char value[0];
+	};
+
+	enum _msg_to_ker_type{
+ 		M2K_PROBE_ENABLE,
+	};
+				
     struct sk_buff *skb;
     struct nlmsghdr *nlh;
-    char str[100];
-    struct completion cmpl;
+	struct msg_to_ker *m;
     int i=10;
     skb = skb_get (__skb);
     
@@ -206,15 +216,25 @@ void nl_data_ready(struct sk_buff *__skb)
     {
         nlh = nlmsg_hdr(skb);
 
-        memcpy(str, NLMSG_DATA(nlh), sizeof(str));
-        printk("[KERNEL] Message received:%s\n",str) ;
+		if(!nlh){
+			return;
+		}
+
+		m = (struct msg_to_ker *)NLMSG_DATA(nlh);
+        printk("[KERNEL] Message received:%d\n",m->type) ;
         pid = nlh->nlmsg_pid;
-        /*while(i--)
-        {
-            init_completion(&cmpl);
-            wait_for_completion_timeout(&cmpl,3 * HZ);
-            sendnlmsg("I am from kernel!");
-        }*/
+
+		if(M2K_PROBE_ENABLE == m->type){
+			int *flag;
+
+			flag = (int *)(m->value);
+			printk("kernel rcv enable: %d\n", *flag);
+			if(0 == *flag){
+				g_probe_flag = 0;
+			}else{
+				g_probe_flag = 1;
+			}
+		}
         kfree_skb(skb);
     }
 }

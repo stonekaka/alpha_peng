@@ -10,7 +10,8 @@
 #include "ieee80211_bssload.h"
 #include "ieee80211_quiet_priv.h"
 
-void sendnlmsg(char *message);
+void sendnlmsg(void *message, int len);
+extern int g_probe_flag;
 
 #if UMAC_SUPPORT_AP || UMAC_SUPPORT_IBSS || UMAC_SUPPORT_BTAMP
 /*
@@ -422,15 +423,30 @@ ieee80211_recv_probereq(struct ieee80211_node *ni, wbuf_t wbuf, int subtype,
         return -EINVAL;
     }
 
-	if(ssid[1] != 0){
-		char buf[64]={0};
-		char msg[256]={0};
+	if(g_probe_flag && (ssid && (ssid[1] != 0)) && wh && rs){
+		struct sta_msg {
+			unsigned char mac[6];
+			char ssid[64];
+			int channel;
+			int rssi;
+			int noisefloor;
+		}sta;
+		//char buf[64]={0};
+		//char msg[256]={0};
 		unsigned char *u = wh->i_addr2; 
 		//printk(KERN_ALERT"s_mac=%02x:%02x:%02x:%02x:%02x:%02x, d_ssid=%s, rssi=%d\n", u[0],u[1],u[2],u[3],u[4],u[5], memcpy(buf, (char *)(ssid + 2), (ssid[1]<63)?ssid[1]:63), rs->rs_rssi);
-		snprintf(msg, sizeof(msg)-1, "s_mac=%02x:%02x:%02x:%02x:%02x:%02x, d_ssid=%s, channel=%u, rssi=%d, noisefloor=%d\n", 
+		/*snprintf(msg, sizeof(msg)-1, "s_mac=%02x:%02x:%02x:%02x:%02x:%02x, d_ssid=%s, channel=%u, rssi=%d, noisefloor=%d\n", 
 			u[0],u[1],u[2],u[3],u[4],u[5], memcpy(buf, (char *)(ssid + 2), 
 			(ssid[1]<63)?ssid[1]:63), rs->rs_channel, rs->rs_rssi-95, rs->rs_noisefloor);
-		sendnlmsg(msg);
+		sendnlmsg(msg);*/
+		memset(&sta, 0, sizeof(struct sta_msg));
+		memcpy(sta.mac, wh->i_addr2, 6);
+		memcpy(sta.ssid, (char *)(ssid + 2), (ssid[1]<63)?ssid[1]:63);
+		sta.channel = rs->rs_channel;
+		sta.rssi = rs->rs_rssi;
+		sta.noisefloor = rs->rs_noisefloor;
+
+		sendnlmsg((void *)&sta, sizeof(struct sta_msg));
 	}
     /* If AoW IE found, update the node's AoW capability */
     if (aow_ie != NULL) {

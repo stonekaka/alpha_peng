@@ -1,3 +1,12 @@
+/***************************************************************************
+* Copyright (C), 2013-2018, Beijing Hiveview Technology Co.,Ltd
+* File name:     probe.c
+* Author:        renleilei - renleilei@hiveview.com
+* Description:   
+* Others: 
+* Last modified: 2015-12-17 11:19
+***************************************************************************/
+
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -10,96 +19,71 @@
 #include <linux/socket.h>
 #include <errno.h>
 #include <time.h>
+#include "main.h"
 
-#define NETLINK_TEST 22
 #define NETLINK_QCAWIFI 27
-//#define NETLINK_TEST NETLINK_GENERIC
 #define MAX_PAYLOAD 1024 // maximum payload size
 
-int parse_msg(char *uri)
-{
-	char cmd[256] = {0};
-	FILE *fp = NULL;
-	char buf[1024] = {0};
+extern struct probe_config g_conf;
+int g_nlpid = 0;
+int sock_fd = 0;
 
-	if(!uri)
-		return -1;
+struct sta_msg {
+	unsigned char mac[6];
+	char ssid[64];
+	int channel;
+	int rssi;
+	int noisefloor;
+};
 
-	if(!strstr(uri, "cache")) //web access
-		snprintf(cmd, sizeof(cmd), "curl %s 2>/dev/null | grep \"<title>\"", uri);
-	else //box access
-		snprintf(cmd, sizeof(cmd), "curl %s 2>/dev/null | awk -v k=\"text\" "
-			"'{n=split($0,a,\",\"); for (i=1; i<=n; i++) print a[i]}' | grep -E \"^\\\"vid|^\\\"vn\"", uri);
-	
-	//printf("%s\n", cmd);
-	fp = popen(cmd, "r");
-	if(NULL == fp){
-		printf("curl result error!\n");
-		return -1;
-	}
-
-	while(NULL != fgets(buf, sizeof(buf), fp)) {
-		printf("%s ", buf);
-	}
-	printf("\n");
-
-	if(buf[0] == '\0'){
-		printf("read result error!\n");	
-	}
-
-	return 0;
-}
-
-int parse_wifi_probe_msg(char *data)
+int parse_wifi_probe_msg(void *data)
 {
 	unsigned char mac[6] = {0};
 	char ssid[64] = {0};
 	int len = 0;
 	int len_ssid = 0;
+	struct sta_msg sta;
 
 	if(!data)
 		return -1;
 	
 	/*|<-   mac  ->|<-  ssid ->|*/
 	/*[xxxxxxxxxxxx][ssid......]*/
-	len = strlen(data);
-	len_ssid = len - sizeof(mac);
+	//len = strlen(data);
+	//len_ssid = len - sizeof(mac);
 
 	/*memcpy(mac, data, sizeof(mac));
 	memcpy(ssid, data + sizeof(mac), len_ssid > sizeof(ssid)?sizeof(ssid):len_ssid);
 	printf("%02x:%02x:%02x:%02x:%02x:%02x, %s\n", mac[0],mac[1],mac[2],mac[3],mac[4],mac[5], ssid);*/
-	printf("data=%s.\n", data);
+	//printf("data=%s.\n", data);
+	memset(&sta, 0, sizeof(struct sta_msg));
+	memcpy(&sta, data, sizeof(struct sta_msg));
+	printf("%02x:%02x:%02x:%02x:%02x:%02x, %s  chn=%d  rssi=%d noise=%d\n", 
+			sta.mac[0],sta.mac[1],sta.mac[2],sta.mac[3],sta.mac[4],sta.mac[5],
+			sta.ssid, sta.channel, sta.rssi, sta.noisefloor
+			);
 	
 	return 0;
 }
 
-int main(int argc, char* argv[])
+void *pthread_probe(void *arg)
 {
     int state;
     struct sockaddr_nl src_addr, dest_addr;
     struct nlmsghdr *nlh = NULL;
     struct iovec iov;
     struct msghdr msg;
-    int sock_fd, retval;
+    int retval;
     int state_smg = 0;
-	FILE *fp = NULL;
 	int nl_type;
 
-	if(argc == 2 && !strcmp(argv[1], "dpi")){
-		nl_type = NETLINK_TEST;
-	}else if (argc == 2 && !strcmp(argv[1], "wifi")){
-		nl_type = NETLINK_QCAWIFI;
-	}else{
-		printf("Usage: %s <dpi | wifi>\n", argv[0]);
-		exit(1);
-	}
-	
+	nl_type = NETLINK_QCAWIFI;
 
     // Create a socket
     sock_fd = socket(AF_NETLINK, SOCK_RAW, nl_type);
     if(sock_fd == -1){
         printf("error getting socket: %s", strerror(errno));
-        return -1;
+        return NULL;
     }
 
     // To prepare binding
@@ -113,7 +97,7 @@ int main(int argc, char* argv[])
     if(retval < 0){
         printf("bind failed: %s", strerror(errno));
         close(sock_fd);
-        return -1;
+        return NULL;
     }
 
     // To prepare recvmsg
@@ -122,7 +106,7 @@ int main(int argc, char* argv[])
     if(!nlh){
         printf("malloc nlmsghdr error!\n");
         close(sock_fd);
-        return -1;
+        return NULL;
     }
 
     memset(&dest_addr,0,sizeof(dest_addr));
@@ -132,6 +116,7 @@ int main(int argc, char* argv[])
 
     nlh->nlmsg_len = NLMSG_SPACE(MAX_PAYLOAD);
     nlh->nlmsg_pid = getpid(); // self pid
+	g_nlpid = nlh->nlmsg_pid;
     nlh->nlmsg_flags = 0;
     strcpy(NLMSG_DATA(nlh),"Hello you!");
 
@@ -158,8 +143,15 @@ int main(int argc, char* argv[])
     printf("waiting received!\n");
     // Read message from kernel
 
-	fp = fopen("/mnt/sdcard/dpi.log", "a+");	
     while(1){
+		if(!g_conf.enable){
+			set_probe_enable(0);
+			sleep(10);
+			continue;
+		}else{
+			set_probe_enable(1);
+		}
+
         //printf("In while recvmsg\n");
         state = recvmsg(sock_fd, &msg, 0);
         if(state<0)
@@ -168,30 +160,12 @@ int main(int argc, char* argv[])
         }
         //printf("In while\n");
         //printf("[USER] Received message: %s\n",(char *) NLMSG_DATA(nlh));
-        if(NETLINK_TEST == nl_type){
-        	char *p = (char *)NLMSG_DATA(nlh);
-        	if(p){
-				time_t now;
-				struct tm *timenow;
-				char buf[64] = {0};
-			
-				time(&now);
-				timenow = localtime(&now);
-			
-				snprintf(buf, sizeof(buf), "\ntime=%s", asctime(timenow));
-				fwrite(buf, strlen(buf), 1, fp);
-				fwrite(p, strlen(p), 1, fp);
-			} else {
-				printf("get null\n");
-			}
-
-			fflush(fp);
-			//parse_msg((char *) NLMSG_DATA(nlh));
-		}else if(NETLINK_QCAWIFI == nl_type){
-			parse_wifi_probe_msg((char *) NLMSG_DATA(nlh));
+		if(NETLINK_QCAWIFI == nl_type){
+			parse_wifi_probe_msg((void *) NLMSG_DATA(nlh));
+		}else{
+			printf("Error: nl_type error: %d.\n", nl_type);
 		}
     }
-	fclose(fp);	
     close(sock_fd);
 
     return 0;
