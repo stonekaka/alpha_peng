@@ -185,8 +185,9 @@ int do_add_sta(unsigned char *mac, unsigned int ipaddr, char *ifname)
 			break;
 		}
 	}
+    maxtime_tmp = maxtime_tmp?maxtime_tmp:12*3600;
 	tmp->config_max_time = maxtime_tmp;
-	tmp->max_time = jiffies + maxtime_tmp?maxtime_tmp:12*3600;
+	tmp->max_time = jiffies + maxtime_tmp * HZ;
 	tmp->config_timeout = timeout_tmp?timeout_tmp:600;
 	tmp->timeout = jiffies + tmp->config_timeout * HZ;
 	memcpy(tmp->ifname, ifname, IFNAMSIZ);

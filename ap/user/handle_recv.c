@@ -998,6 +998,7 @@ static int handle_ac_call(char *wsid, char *from, char *msg)
 	/* Get plain: {"token":"123456","account":"14:3d:f2:bd:40:bc","function":"sendConfig","type":"config","subtype":"wifi","data":{"radio":{"2.4g":[],"5g":[]},"wlan":[]}}*/
 	cJSON *json;	
 	cJSON *json_type, *json_subtype;
+	cJSON *json_data, *json_data_url;
 	
 	if(!msg){
 		LOG_INFO("%d: arg is null\n", __LINE__);
@@ -1027,7 +1028,7 @@ static int handle_ac_call(char *wsid, char *from, char *msg)
 		ap_change_state(AP_RUNNING);
 	}else if(!strcmp(json_type->valuestring, "getApInfo")){
 
-		send_apinfo_to_ac(wsid, from);		
+		send_apinfo_to_ac(wsid, from);
 
 	}else if(!strcmp(json_type->valuestring, "getSsidInfo")){
 		send_ssidinfo_to_ac(wsid, from);
@@ -1037,6 +1038,14 @@ static int handle_ac_call(char *wsid, char *from, char *msg)
 		ap_change_state(AP_REBOOTING);
 		
 		system("sync ;sleep 3 ;reboot");
+	}else if(!strcmp(json_type->valuestring, "uploadLogFile")){
+		enqueue_msg(tmp);
+		json_data = cJSON_GetObjectItem(json, "data");
+		CHECK_JSON(json_data, cJSON_Object);
+		json_data_url = cJSON_GetObjectItem(json_data, "url");
+		CHECK_JSON(json_data_url, cJSON_String);
+		upload_file("/var/log/dm.tgz", json_data_url->valuestring);
+
 	}else{
 
 		snprintf(tmp, sizeof(tmp), "{\"type\":\"router\",\"wsid\":\"%s\",\"from\":\"%s\",\"error\":1,\"data\":{}}",
@@ -1175,6 +1184,7 @@ static int handle_msg(char *msg)
 			Base64decode(buf, json_array_item->valuestring);
 			LOG_INFO("Get plain: %s\n", buf);
 
+			/*"{\"type\":\"uploadLogFile\",\"subtype\":\"\",\"data\":{\"url\":\"http://192.168.3.1/upload.php\"}}"*/
 			handle_ac_call(json_wsid->valuestring, json_from->valuestring, buf);
 		}
 	}else if(!strcmp("ap_heart_beat", json_type->valuestring)){
