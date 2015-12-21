@@ -52,7 +52,7 @@ int is_dst_portal(unsigned int daddr)
 		
 	for(i = 0; i < MAX_WLAN_COUNT; i++) {
 		for(j = 0; j < n; j++){
-			if(daddr == wlans[i].portal_ipaddr[j]){
+			if(0 != wlans[i].portal_ipaddr[j] && daddr == wlans[i].portal_ipaddr[j]){
 				ret = DST_ALLOW;
 				break;
 			}
