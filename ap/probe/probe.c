@@ -28,14 +28,6 @@ extern struct probe_config g_conf;
 int g_nlpid = 0;
 int sock_fd = 0;
 
-struct sta_msg {
-	unsigned char mac[6];
-	char ssid[64];
-	int channel;
-	int rssi;
-	int noisefloor;
-};
-
 int parse_wifi_probe_msg(void *data)
 {
 	unsigned char mac[6] = {0};
@@ -47,21 +39,62 @@ int parse_wifi_probe_msg(void *data)
 	if(!data)
 		return -1;
 	
-	/*|<-   mac  ->|<-  ssid ->|*/
-	/*[xxxxxxxxxxxx][ssid......]*/
-	//len = strlen(data);
-	//len_ssid = len - sizeof(mac);
-
-	/*memcpy(mac, data, sizeof(mac));
-	memcpy(ssid, data + sizeof(mac), len_ssid > sizeof(ssid)?sizeof(ssid):len_ssid);
-	printf("%02x:%02x:%02x:%02x:%02x:%02x, %s\n", mac[0],mac[1],mac[2],mac[3],mac[4],mac[5], ssid);*/
-	//printf("data=%s.\n", data);
 	memset(&sta, 0, sizeof(struct sta_msg));
 	memcpy(&sta, data, sizeof(struct sta_msg));
-	printf("%02x:%02x:%02x:%02x:%02x:%02x, %s  chn=%d  rssi=%d noise=%d\n", 
+
+    sta.rssi -= 95;
+    if(sta.noisefloor > 128 || sta.noisefloor < -127){
+        sta.noisefloor = -95;
+    }
+
+    switch (sta.channel){
+        case 2412:
+            sta.channel = 1;
+            break;
+        case 2417:
+            sta.channel = 2;
+            break;
+        case 2422:
+            sta.channel = 3;
+            break;
+        case 2427:
+            sta.channel = 4;
+            break;
+        case 2432:
+            sta.channel = 5;
+            break;
+        case 2437:
+            sta.channel = 6;
+            break;
+        case 2442:
+            sta.channel = 7;
+            break;
+        case 2447:
+            sta.channel = 8;
+            break;
+        case 2452:
+            sta.channel = 9;
+            break;
+        case 2457:
+            sta.channel = 10;
+            break;
+        case 2462:
+            sta.channel = 11;
+            break;
+        case 2467:
+            sta.channel = 12;
+            break;
+        case 2472:
+            sta.channel = 13;
+            break;
+        default:
+            break;
+    }
+	/*printf("%02x:%02x:%02x:%02x:%02x:%02x, %s  chn=%d  rssi=%d noise=%d\n", 
 			sta.mac[0],sta.mac[1],sta.mac[2],sta.mac[3],sta.mac[4],sta.mac[5],
 			sta.ssid, sta.channel, sta.rssi, sta.noisefloor
-			);
+			);*/
+	add_mu(sta, 0);
 	
 	return 0;
 }
@@ -76,6 +109,8 @@ void *pthread_probe(void *arg)
     int retval;
     int state_smg = 0;
 	int nl_type;
+	int flag_enable = 0;
+	int flag_disable = 0;
 
 	nl_type = NETLINK_QCAWIFI;
 
@@ -145,11 +180,19 @@ void *pthread_probe(void *arg)
 
     while(1){
 		if(!g_conf.enable){
-			set_probe_enable(0);
+			flag_disable++;
+			if(flag_disable <= 1){
+				set_probe_enable(0);
+				flag_enable = 0;
+			}
 			sleep(10);
 			continue;
 		}else{
-			set_probe_enable(1);
+			flag_enable++;
+			if(flag_enable <= 1){
+				set_probe_enable(1);
+				flag_disable = 0;
+			}
 		}
 
         //printf("In while recvmsg\n");

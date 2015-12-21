@@ -11,6 +11,8 @@
 
 int g_pthread_init = 0;
 struct probe_config g_conf;
+unsigned char g_apmac[6];
+pthread_rwlock_t g_lock;
 
 int pthread_init(void)
 {
@@ -49,29 +51,71 @@ int get_probe_conf(void)
 	}
 	
 	/*enable=1, server=1.1.1.1, port=8084*/
-	fgets(buf, sizeof(buf) - 1, fp);
+	if(fgets(buf, sizeof(buf) - 1, fp)){
 
-	fclose(fp);
-	clear_crlf(buf);
+		fclose(fp);
+		clear_crlf(buf);
 
-	memset(&g_conf, 0, sizeof(struct probe_config));
+		memset(&g_conf, 0, sizeof(struct probe_config));
 
-	n = sscanf(buf, "enable=%d, server=%s, port=%d, interval=%d", 
+		n = sscanf(buf, "enable=%d server=%s port=%d interval=%d", 
 					&g_conf.enable, g_conf.server, &g_conf.port, &g_conf.interval);
-	LOG_INFO("n=%d; enable=%d, server=%s, port=%d, interval=%d", 
+		LOG_INFO("n=%d; enable=%d, server=%s, port=%d, interval=%d\n", 
 					n, g_conf.enable, g_conf.server, g_conf.port, g_conf.interval);
-
-	if(n == 3) {
-		ret = g_conf.enable;
+	}else{
+		LOG_INFO("fgets error\n");
 	}
 
+    if(0 == strcmp("0.0.0.0", g_conf.server) || strlen(g_conf.server) == 0){
+        snprintf(g_conf.server, sizeof(g_conf.server) - 1, "%s",  DEFAULT_SERVER);
+    }
+
+    if(g_conf.port <= 0 || g_conf.port >= 65535){
+        g_conf.port = DEFAULT_PORT;
+    }
+
+	return 0;
+}
+
+int get_ap_mac(unsigned char *ret_mac, int len)
+{
+	char *cmd = "ifconfig br0 | grep HWaddr |awk '{print $5}' | tr '[A-Z]' '[a-z]'";
+	FILE *fp = NULL;
+    char mac[24]={0};
+    int ret = 0;
+
+	fp = popen(cmd, "r");
+	if(fp){
+		fgets(mac, sizeof(mac)-1, fp);
+		clear_crlf(mac);
+        ascii2mac(mac, ret_mac);
+        if(strlen(mac) < strlen("xx:xx:xx:xx:xx:xx")){
+            ret = -1;
+        }
+	}else{
+		return -1;
+	}
+
+	pclose(fp);
 	return ret;
 }
 
 int main(void)
 {
 	int interval = 0;
-		
+	
+	if(get_ap_mac(g_apmac, sizeof(g_apmac))){
+#if 1	
+	    unsigned char mmac[6] = {1,1,1,1,1,1};
+	    memcpy(g_apmac, mmac, 6);
+#endif	
+    }
+
+    if (pthread_rwlock_init(&g_lock, NULL) != 0) {
+        printf("0 can't create rwlock");
+        return -1;
+    }
+
 	while(1){
 		LOG_INFO("main loop\n");
 		if(0 == g_pthread_init){
@@ -80,7 +124,10 @@ int main(void)
 
 		get_probe_conf();
 
-		interval = g_conf.interval?g_conf.interval:10;
+		interval = 10;
+		if(g_conf.interval >= 3 && g_conf.interval <= 24 * 3600){
+			interval = g_conf.interval;
+		}
 	
 		if(!g_conf.enable){
 			
@@ -88,6 +135,8 @@ int main(void)
 			continue;
 		}
 	
+        upload_mu();
+
 		sleep(interval);
 	}
 

@@ -140,7 +140,7 @@ int set_probe_enable(int flag)
    	state_smg = send_nl_msg(m, len);
 
 	free(m);
-	LOG_INFO("/*************/\nset ap online to %d.\n/*************/\n", flag);
+	LOG_INFO("\n/*************/\nset probe enable to %d.\n/*************/\n", flag);
    	if(state_smg == -1)
    	{
        	LOG_INFO("set ap online get error sendmsg = %s\n",strerror(errno));

@@ -11,7 +11,7 @@
 #define __PDU_H__
 
 #pragma pack(1)
-#define MU_TOTAL 100
+#define MU_TOTAL 255
 
 typedef struct pdu_header{
 	short header;
@@ -23,13 +23,13 @@ typedef struct pdu_header{
 
 typedef struct mu{ // code 0xD6
 	PDU_H header;
-	char ap_mac[6];
+	unsigned char ap_mac[6];
 	short vendor_id;
-	char mu_mac[6];
+	unsigned char mu_mac[6];
 	char radio_type;
-	char channel;
-	char is_associated;
-	char associated_ap[6];
+	unsigned char channel;
+	char is_associated; //0x02: no, 0x01: yes
+	unsigned char associated_ap[6];
 	char mu_type;
 	char rssi;
 	char noise_floor;

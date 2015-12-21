@@ -13,9 +13,14 @@
 #include <unistd.h>
 #include <string.h>
 #include "util.h"
+#include "uthash.h"
+
+#define DEFAULT_SERVER "118.144.162.15"
+#define DEFAULT_PORT 8488
 
 #define LOG_INFO printf
 
+#define MAX_WLAN_COUNT 6
 
 /*msg to kernel*/
 struct msg_to_ker{
@@ -35,8 +40,19 @@ struct probe_config {
 	int interval;
 };
 
+struct sta_msg {
+	unsigned char mac[6];
+	char ssid[64];
+	int channel;
+	int rssi;
+	int noisefloor;
+};
+
 void *pthread_probe(void *arg);
 int set_probe_enable(int flag);
+int add_mu(struct sta_msg sta, int is_associate);
+int upload_mu(void);
+int send_udp_data(void *data, int len, char *server, int port);
 
 #endif
 
