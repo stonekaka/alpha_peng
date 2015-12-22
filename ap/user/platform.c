@@ -511,3 +511,30 @@ int get_all_ssid_status(struct ssid_status *ssid_list)
 	return 0;
 }
 
+int fw_upgrade(char *url, char *md5)
+{
+#define FW_FILENAME	"/tmp/pwf_upgrade.bin"
+#define FW_UPGRADE "cat "FW_FILENAME" > /dev/mtdblock/1 && echo \"1\">/proc/rebootm"
+	int ret = 0;
+	char smd5[64] = {0};
+	char cmd[128] = {0};
+	
+	if(!url || !md5){
+		return -1;
+	}
+
+	LOG_INFO("%s: url=%s, md5=%s\n", __FUNCTION__, url, md5);
+	download_file(url, FW_FILENAME);
+	get_file_md5(FW_FILENAME, smd5, sizeof(smd5) - 1);
+	if(0 != strcmp(md5, smd5)){
+		LOG_INFO("%s: fw md5 not match: told:real  -%s:%s-\n", __FUNCTION__, md5, smd5);
+		return -1;
+	}
+	LOG_INFO("%s:fw md5 is match: told:real  -%s:%s-\n", __FUNCTION__, md5, smd5);
+
+	LOG_INFO("%s: exec: %s.\n", __FUNCTION__, FW_UPGRADE);
+	system(FW_UPGRADE);
+
+	return ret;
+}
+

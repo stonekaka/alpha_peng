@@ -999,6 +999,7 @@ static int handle_ac_call(char *wsid, char *from, char *msg)
 	cJSON *json;	
 	cJSON *json_type, *json_subtype;
 	cJSON *json_data, *json_data_url;
+	cJSON *json_data_md5;
 	
 	if(!msg){
 		LOG_INFO("%d: arg is null\n", __LINE__);
@@ -1045,7 +1046,16 @@ static int handle_ac_call(char *wsid, char *from, char *msg)
 		json_data_url = cJSON_GetObjectItem(json_data, "url");
 		CHECK_JSON(json_data_url, cJSON_String);
 		upload_file("/var/log/dm.log", json_data_url->valuestring);
-
+	}else if(!strcmp(json_type->valuestring, "upgrade")){
+		enqueue_msg(tmp);
+		json_data = cJSON_GetObjectItem(json, "data");
+		CHECK_JSON(json_data, cJSON_Object);
+		json_data_url = cJSON_GetObjectItem(json_data, "url");
+		CHECK_JSON(json_data_url, cJSON_String);
+		json_data_md5 = cJSON_GetObjectItem(json_data, "md5");
+		CHECK_JSON(json_data_md5, cJSON_String);
+		
+		fw_upgrade(json_data_url->valuestring, json_data_md5->valuestring);
 	}else{
 
 		snprintf(tmp, sizeof(tmp), "{\"type\":\"router\",\"wsid\":\"%s\",\"from\":\"%s\",\"error\":1,\"data\":{}}",
@@ -1185,6 +1195,7 @@ static int handle_msg(char *msg)
 			LOG_INFO("Get plain: %s\n", buf);
 
 			/*"{\"type\":\"uploadLogFile\",\"subtype\":\"\",\"data\":{\"url\":\"http://192.168.3.1/upload.php\"}}"*/
+			//snprintf(buf, sizeof(buf)-1, "{\"type\":\"upgrade\",\"subtype\":\"\",\"data\":{\"url\":\"http://192.168.3.211/GameDownload/up.bin\",\"md5\":\"eba421a5c2a51dbfdd451ae71703ca4b\"}}");
 			handle_ac_call(json_wsid->valuestring, json_from->valuestring, buf);
 		}
 	}else if(!strcmp("ap_heart_beat", json_type->valuestring)){

@@ -14,6 +14,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <openssl/md5.h>
 
 int ascii2mac(const char *addr, unsigned char *res)
 {
@@ -237,5 +238,45 @@ void init_daemon(void)
 	umask(0);
 
 	return;
+}
+
+int get_file_md5(char *filename, char *md5, int len)
+{
+	unsigned char c[MD5_DIGEST_LENGTH];
+	int i, j = 0;
+	FILE *fp = NULL;
+	MD5_CTX mdContext;
+	int bytes;
+	unsigned char data[1024];
+	char tmp[8] = {0};
+
+	if(!filename || !md5 || len <= 0){
+		printf("%s: arg error\n", __FUNCTION__);
+		return -1;
+	}
+
+	fp = fopen(filename, "rb");
+	if(NULL == fp){
+		printf("%s:fopen error.\n", __FUNCTION__);
+		return -1;
+	}
+	
+	MD5_Init(&mdContext);
+	while ((bytes = fread (data, 1, 1024, fp)) != 0)
+		MD5_Update (&mdContext, data, bytes);
+	MD5_Final (c,&mdContext);
+	//printf("\n");
+	//for(i = 0; i < MD5_DIGEST_LENGTH; i++) printf("%02x", c[i]);
+	//printf("\n");
+
+	fclose(fp);
+	
+	for(i = 0; i < MD5_DIGEST_LENGTH; i++){
+		memset(tmp, 0, sizeof(tmp));
+		snprintf(tmp, sizeof(tmp) - 1, "%02x", c[i]);
+		strcat(md5, tmp);
+	}
+
+	return 0;
 }
 

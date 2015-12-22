@@ -24,19 +24,24 @@ int upload_file(const char *filename, const char *dst_url)
 	CURLcode res;
 	struct stat file_info;
 	double speed_upload, total_time;
-	FILE *fd;
+	FILE *fp;
 	char postarg[64] = {0};
 	
+	if(!filename || !dst_url){
+		printf("%s:arg error\n", __FUNCTION__);
+		return -1;
+	}
+
 	snprintf(postarg, sizeof(postarg) - 1, "apmac=%s", g_ap_label_mac);
 
-	fd = fopen(filename, "rb"); /* open file to upload */
-	if(!fd) {
+	fp = fopen(filename, "rb"); /* open file to upload */
+	if(!fp) {
 
 		return 1; /* can't continue */
 	}
 
 	/* to get the file size */
-	if(fstat(fileno(fd), &file_info) != 0) {
+	if(fstat(fileno(fp), &file_info) != 0) {
 
 		return 1; /* can't continue */
 	}
@@ -52,7 +57,7 @@ int upload_file(const char *filename, const char *dst_url)
 		curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
 
 		/* set where to read from (on Windows you need to use READFUNCTION too) */
-		curl_easy_setopt(curl, CURLOPT_READDATA, fd);
+		curl_easy_setopt(curl, CURLOPT_READDATA, fp);
 
 		/* and give the size of the upload (optional) */
 		curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE,
@@ -79,6 +84,46 @@ int upload_file(const char *filename, const char *dst_url)
 		/* always cleanup */
 		curl_easy_cleanup(curl);
 	}
+	fclose(fp);
+	return 0;
+}
+
+int download_file(const char *url, const char *filename)
+{
+	int ret = 0;
+	CURL *curl;
+	FILE *fp;
+	
+	if(!filename || !url){
+		printf("%s:arg error\n", __FUNCTION__);
+		return -1;
+	}
+
+	curl = curl_easy_init();
+	if(curl) {
+		/* upload to this place */
+		curl_easy_setopt(curl, CURLOPT_URL, url);
+
+		fp = fopen(filename, "w+");
+		if(!fp){
+			goto out;
+		}
+
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+
+		ret = curl_easy_perform(curl);
+		/* Check for errors */
+		if(ret != CURLE_OK) {
+		  fprintf(stderr, "curl_easy_perform() failed: %s\n",
+				  curl_easy_strerror(ret));
+		}
+
+		fclose(fp);
+out:
+		/* always cleanup */
+		curl_easy_cleanup(curl);
+	}
+
 	return 0;
 }
 
