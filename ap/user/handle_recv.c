@@ -1045,6 +1045,7 @@ static int handle_ac_call(char *wsid, char *from, char *msg)
 		CHECK_JSON(json_data, cJSON_Object);
 		json_data_url = cJSON_GetObjectItem(json_data, "url");
 		CHECK_JSON(json_data_url, cJSON_String);
+		system("cat /proc/pengwifi/* >> /var/log/dm.log");
 		upload_file("/var/log/dm.log", json_data_url->valuestring);
 	}else if(!strcmp(json_type->valuestring, "upgrade")){
 		enqueue_msg(tmp);
