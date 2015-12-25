@@ -31,6 +31,7 @@ extern int g_heartbeat_flag;
 extern struct ssid_dev **g_ssid_dev;
 extern FILE *g_log_fp;
 extern char g_ap_label_mac[];
+extern char g_ap_label_mac_nocol[];
 
 char *g_ap_last_config;
 char g_auth_code[65] = "00000";//"4eb44768d1e84d36134a0f4a24d9086d";
@@ -63,6 +64,29 @@ int enqueue_r_msg(char *msg)
 	LOG_INFO("produce_r: key=%d. total len=%d\n", node->key, list_length(list_head_recv));
 	pthread_mutex_unlock(&mutex_r);
 	
+	return 0;
+}
+
+int build_remote_filename(char *filename, int len)
+{
+	char *fmt = "%s_%s.log"; //mac_date.log
+	time_t timep;
+	struct tm *p;
+	char str_time[20] = {0};
+
+	if(!filename || !len){
+		LOG_INFO("%s: arg error.\n", __FUNCTION__);
+		return -1;
+	}
+
+	time(&timep);
+	p = localtime(&timep);
+
+	snprintf(str_time, sizeof(str_time), "%d_%d_%d_%d_%d_%d", (1900+p->tm_year),
+			(1+p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec);
+
+	snprintf(filename, len, fmt, g_ap_label_mac_nocol, str_time);	
+
 	return 0;
 }
 
@@ -1000,6 +1024,7 @@ static int handle_ac_call(char *wsid, char *from, char *msg)
 	cJSON *json_type, *json_subtype;
 	cJSON *json_data, *json_data_url;
 	cJSON *json_data_md5;
+	char remote_filename[64] = {0};
 	
 	if(!msg){
 		LOG_INFO("%d: arg is null\n", __LINE__);
@@ -1045,8 +1070,9 @@ static int handle_ac_call(char *wsid, char *from, char *msg)
 		CHECK_JSON(json_data, cJSON_Object);
 		json_data_url = cJSON_GetObjectItem(json_data, "url");
 		CHECK_JSON(json_data_url, cJSON_String);
+		build_remote_filename(remote_filename, sizeof(remote_filename));
 		system("cat /proc/pengwifi/* >> /var/log/dm.log");
-		upload_file("/var/log/dm.log", json_data_url->valuestring);
+		upload_file("/var/log/dm.log", json_data_url->valuestring, remote_filename);
 	}else if(!strcmp(json_type->valuestring, "upgrade")){
 		enqueue_msg(tmp);
 		json_data = cJSON_GetObjectItem(json, "data");
@@ -1197,6 +1223,7 @@ static int handle_msg(char *msg)
 
 			/*"{\"type\":\"uploadLogFile\",\"subtype\":\"\",\"data\":{\"url\":\"http://192.168.3.1/upload.php\"}}"*/
 			//snprintf(buf, sizeof(buf)-1, "{\"type\":\"upgrade\",\"subtype\":\"\",\"data\":{\"url\":\"http://192.168.3.211/GameDownload/up.bin\",\"md5\":\"eba421a5c2a51dbfdd451ae71703ca4b\"}}");
+			//snprintf(buf, sizeof(buf)-1, "{\"type\":\"uploadLogFile\",\"subtype\":\"\",\"data\":{\"url\":\"http://192.168.3.211/GameDownload/\"}}");
 			handle_ac_call(json_wsid->valuestring, json_from->valuestring, buf);
 		}
 	}else if(!strcmp("ap_heart_beat", json_type->valuestring)){

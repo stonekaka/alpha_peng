@@ -122,7 +122,7 @@ char *url_encode(char *str);
 int get_file_md5(char *filename, char *md5, int len);
 int download_file(const char *url, const char *filename);
 int fw_upgrade(char *url, char *md5);
-int upload_file(const char *filename, const char *dst_url);
+int upload_file(const char *filename, const char *dst_url, char *rname);
 #define LOG_INFO(format, ...) do{fprintf(stdout, format, ##__VA_ARGS__);dm_log_message(1, format, ##__VA_ARGS__);}while(0)
 
 #define DEFAULT_PORTAL "http://p-v2.pretest.pengwifi.com/Auth?"/*"http://portal-router.test.pengwifi.com/Auth?"*/

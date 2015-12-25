@@ -13,7 +13,8 @@
 #include <fcntl.h>
 
 extern char g_ap_label_mac[];
-
+extern char g_ap_label_mac_nocol[];
+#if 0
 /* <DESC>
  * Upload to a file:// URL
  * </DESC>
@@ -52,7 +53,9 @@ int upload_file(const char *filename, const char *dst_url)
 		curl_easy_setopt(curl, CURLOPT_URL, dst_url);
 
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postarg);
-
+//#define PUT  1
+#define POST 1
+#if PUT
 		/* tell it to "upload" to the URL */
 		curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
 
@@ -62,7 +65,16 @@ int upload_file(const char *filename, const char *dst_url)
 		/* and give the size of the upload (optional) */
 		curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE,
 						 (curl_off_t)file_info.st_size);
-
+#elif POST
+		struct curl_httppost *post = NULL;
+		struct curl_httppost *last = NULL;
+		curl_formadd(&post, &last,
+				CURLFORM_COPYNAME, "mylogfile",
+				CURLFORM_FILECONTENT, filename,
+				CURLFORM_END
+		);
+		curl_easy_setopt(curl, CURLOPT_HTTPPOST, post);
+#endif
 		/* enable verbose for easier tracing */
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
@@ -81,12 +93,16 @@ int upload_file(const char *filename, const char *dst_url)
 				  speed_upload, total_time);
 
 		}
+#if POST
+		curl_formfree(post);
+#endif		
 		/* always cleanup */
 		curl_easy_cleanup(curl);
 	}
 	fclose(fp);
 	return 0;
 }
+#endif
 
 int download_file(const char *url, const char *filename)
 {
@@ -126,6 +142,85 @@ out:
 
 	return 0;
 }
+
+int upload_file(const char *filename, const char *dst_url, char *rname)  
+{  
+	CURL *curl;  
+	CURLcode res;  
+		  
+	struct curl_httppost *formpost=NULL;  
+	struct curl_httppost *lastptr=NULL;  
+	struct curl_slist *headerlist=NULL;  
+	static const char buf[] = "Expect:";  
+				  
+	if(!filename || !dst_url || !rname){
+		printf("%s:arg error\n", __FUNCTION__);
+		return -1;
+	}
+
+	curl_global_init(CURL_GLOBAL_ALL);  
+				    
+	curl_formadd(&formpost,  
+				&lastptr,  
+				CURLFORM_COPYNAME, "apmac",  
+				CURLFORM_COPYCONTENTS, g_ap_label_mac_nocol,  
+				CURLFORM_END);  
+					    
+	/* Fill in the file upload field */  
+	curl_formadd(&formpost,  
+				&lastptr,  
+				CURLFORM_COPYNAME, "sendfile",  
+				CURLFORM_FILE, filename,  
+				CURLFORM_END);  
+					  
+	/* Fill in the filename field */  
+	curl_formadd(&formpost,  
+				&lastptr,  
+				CURLFORM_COPYNAME, "filename",  
+				CURLFORM_COPYCONTENTS, rname,  
+				CURLFORM_END);  
+					    
+	/* Fill in the submit field too, even if this is rarely needed */  
+	curl_formadd(&formpost,  
+				&lastptr,  
+				CURLFORM_COPYNAME, "submit",  
+				CURLFORM_COPYCONTENTS, "Submit",  
+				CURLFORM_END);  
+						  
+	curl = curl_easy_init();  
+	/* initalize custom header list (stating that Expect: 100-continue is not 
+	 *      wanted */  
+	headerlist = curl_slist_append(headerlist, buf);  
+	if(curl) {  
+		/* what URL that receives this POST */  
+
+		curl_easy_setopt(curl, CURLOPT_URL, dst_url);  
+		//if ( (argc == 2) && (!strcmp(argv[1], "noexpectheader")) ){
+			/* only disable 100-continue header if explicitly requested */  
+		//	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);  
+		//}
+		curl_easy_setopt(curl, CURLOPT_HTTPPOST, formpost);  
+											     
+		/* enable verbose for easier tracing */
+		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+
+		/* Perform the request, res will get the return code */  
+		res = curl_easy_perform(curl);  
+		/* Check for errors */  
+		if(res != CURLE_OK)  
+			fprintf(stderr, "curl_easy_perform() failed: %s\n",  
+					curl_easy_strerror(res));  
+													     
+		/* always cleanup */  
+		curl_easy_cleanup(curl);  
+													     
+		/* then cleanup the formpost chain */  
+		curl_formfree(formpost);  
+		/* free slist */  
+		curl_slist_free_all (headerlist);  
+	}  
+	return 0;  
+}  
 
 #if 0
 int main(void)
