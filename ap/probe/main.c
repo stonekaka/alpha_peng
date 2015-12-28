@@ -50,7 +50,7 @@ int get_probe_conf(void)
 		return -1;
 	}
 	
-	/*enable=1, server=1.1.1.1, port=8084*/
+	/*enable=1 server=1.1.1.1 port=8084*/
 	if(fgets(buf, sizeof(buf) - 1, fp)){
 
 		fclose(fp);
