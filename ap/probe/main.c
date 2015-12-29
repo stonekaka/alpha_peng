@@ -50,7 +50,7 @@ int get_probe_conf(void)
 		return -1;
 	}
 	
-	/*enable=1 server=1.1.1.1 port=8084*/
+	/*enable=1 server=1.1.1.1 port=8084 interval=0*/
 	if(fgets(buf, sizeof(buf) - 1, fp)){
 
 		fclose(fp);
@@ -125,7 +125,7 @@ int main(void)
 		get_probe_conf();
 
 		interval = 10;
-		if(g_conf.interval >= 3 && g_conf.interval <= 24 * 3600){
+		if(g_conf.interval >= 3 && g_conf.interval <= 72 * 3600){
 			interval = g_conf.interval;
 		}
 	
