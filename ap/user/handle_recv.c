@@ -237,6 +237,83 @@ int send_apinfo_to_ac(char *wsid, char *from)
 	return 0;
 }
 
+int set_scan_to_config(char *enable, char *degree, char *server_ip, char *server_port)
+{
+	FILE *fp = NULL;
+	char *filename = "/tmp/pwf_probe";
+	char buf[128] = {0};
+	int enable_flag = 0, interval = 0;
+	int cnt = 0;
+	
+	if(!enable || !degree || !server_ip || !server_port){
+		LOG_INFO("input scan arg is NULL!\n");
+		return -1;		
+	}
+
+	fp = fopen(filename, "w+");		
+	if(!fp){
+		LOG_INFO("open %s failed.\n", filename);	
+		return -1;
+	}
+
+	switch(atoi(degree)){
+		case 1:
+			interval = 5;
+			break;
+		case 2:
+			interval = 15;
+			break;
+		case 3:
+			interval = 100;
+			break;
+		default:
+			interval = 15;
+			break;
+	}
+
+	if(atoi(enable) == 1){
+		enable_flag = 1;
+	}
+
+	snprintf(buf, sizeof(buf) - 1, "enable=%d server=%s port=%s interval=%d", 
+			enable_flag, server_ip, server_port, interval);
+	cnt = fwrite(buf, 1, strlen(buf), fp);
+	if(cnt != strlen(buf)){
+		LOG_INFO("fwrite error: cnt=%d, expect len=%d.\n", cnt, strlen(buf));
+	}
+
+	fclose(fp);
+
+	return 0;
+}
+
+int set_scan_config(cJSON *scan)
+{
+	cJSON *json_enable, *json_degree, *json_server_ip, *json_server_port;
+
+	if(!scan){
+		LOG_INFO("input scan is NULL!\n");
+		return -1;	
+	}
+
+	json_enable = cJSON_GetObjectItem(scan, "cmd_switch");
+	CHECK_JSON(json_enable, cJSON_String);
+
+	json_degree = cJSON_GetObjectItem(scan, "degree");
+	CHECK_JSON(json_degree, cJSON_String);
+
+	json_server_ip = cJSON_GetObjectItem(scan, "server_ip");
+	CHECK_JSON(json_server_ip, cJSON_String);
+
+	json_server_port = cJSON_GetObjectItem(scan, "server_port");
+	CHECK_JSON(json_server_port, cJSON_String);
+
+	set_scan_to_config(json_enable->valuestring, json_degree->valuestring,
+			json_server_ip->valuestring, json_server_port->valuestring);	
+
+	return 0;
+}
+
 int set_radio_config(cJSON *radio)
 {
 	cJSON *json_2g, *json_5g;
@@ -960,7 +1037,7 @@ static int handle_wifi_config(char *msg)
 {
 	/* Get plain: {"token":"123456","account":"14:3d:f2:bd:40:bc","function":"sendConfig","type":"config","subtype":"wifi","data":{"radio":{"2.4g":[],"5g":[]},"wlan":[]}}*/
 	cJSON *json;	
-	cJSON *json_data, *json_data_radio;
+	cJSON *json_data, *json_data_radio, *json_data_scan;
 
 	if(!msg){
 		LOG_INFO("%d: arg is null\n", __LINE__);
@@ -995,12 +1072,19 @@ static int handle_wifi_config(char *msg)
 	json_data_radio = cJSON_GetObjectItem(json_data, "radio");
 	CHECK_JSON_EASY(json_data_radio, cJSON_Object);
 
+	json_data_scan = cJSON_GetObjectItem(json_data, "scan");
+	CHECK_JSON_EASY(json_data_scan, cJSON_Object);
+
 	LOG_INFO("---Parse wifi config success!!!---\n");
 	memset(g_ap_last_config, 0, MAX_MSG_SIZE);
 	snprintf(g_ap_last_config, MAX_MSG_SIZE - 1, "%s", msg);
 
 	if(json_data_radio){
 		set_radio_config(json_data_radio);
+	}
+	
+	if(json_data_scan){
+		set_scan_config(json_data_scan);
 	}
 	
 	build_ssid_dev_table(json_data);//this function must before cJSON_Delete
