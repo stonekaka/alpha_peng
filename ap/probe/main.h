@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <pthread.h>
 #include "util.h"
 #include "uthash.h"
 
