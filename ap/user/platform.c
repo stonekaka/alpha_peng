@@ -526,7 +526,7 @@ int fw_upgrade(char *url, char *md5)
 	LOG_INFO("%s: url=%s, md5=%s\n", __FUNCTION__, url, md5);
 	download_file(url, FW_FILENAME);
 	get_file_md5(FW_FILENAME, smd5, sizeof(smd5) - 1);
-	if(0 != strcmp(md5, smd5)){
+	if(0 != strcasecmp(md5, smd5)){
 		LOG_INFO("%s: fw md5 not match: told:real  -%s:%s-\n", __FUNCTION__, md5, smd5);
 		return -1;
 	}

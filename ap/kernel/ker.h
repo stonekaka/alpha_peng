@@ -201,10 +201,10 @@ static inline int set_sta_state(const unsigned char *mac, int state)
 	hlist_for_each_entry_rcu(node, pos, head, hlist) {
 #endif
 		if(0 == memcmp(node->mac, mac, ETH_ALEN)){
-			node->state = state;
-			if(STATE_AUTHED == node->state) {printk("node->config_max_time=%lu ==========\n", node->config_max_time);
-				node->max_time = jiffies + node->config_max_time * HZ;printk("node->config_max_time=%lu ,max_time=%lu==========\n", node->config_max_time, node->max_time);
+			if(STATE_AUTHED != node->state && STATE_AUTHED == state) {
+				node->max_time = jiffies + node->config_max_time * HZ;
 			}
+			node->state = state;
 			break;
 		}
 	}

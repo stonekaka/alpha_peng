@@ -14,7 +14,9 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef USE_OPENSSL
 #include <openssl/md5.h>
+#endif
 
 int ascii2mac(const char *addr, unsigned char *res)
 {
@@ -240,6 +242,7 @@ void init_daemon(void)
 	return;
 }
 
+#ifdef USE_OPENSSL
 int get_file_md5(char *filename, char *md5, int len)
 {
 	unsigned char c[MD5_DIGEST_LENGTH];
@@ -279,4 +282,4 @@ int get_file_md5(char *filename, char *md5, int len)
 
 	return 0;
 }
-
+#endif

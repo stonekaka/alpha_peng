@@ -2,7 +2,7 @@
 #include ../../../../libwebsockets/env.mk
 #include /home/op/gitlab/ezlink_api/build_patch/env.mk
 include /home/op/pengwifi/libwebsockets/env.mk.ap200
-CFLAGS+=-Wall -pthread
+CFLAGS+=-Wall -pthread -DUSE_OPENSSL
 CFLAGS+=-I../../libwebsockets/
 LIB_DIR+=-L../../libwebsockets/
 
