@@ -225,6 +225,10 @@ int translate_enctype(int input)
 
 int exec_wlan_config(void)
 {
+#ifdef AP200_XML	
+#define XMLSET_WLAN_SSID_PRIM  "/wlan/inf:%d/ssid"	
+#define XMLSET_WLAN_SSID_SUB   "/wlan/inf:%d/multi/index:%d/ssid"
+#endif	
 #define SET_WLAN_PRIM  "rgdb -s /wlan/inf:%d/%%s"
 #define SET_WLAN_SUB_ENABLE   "rgdb -s /wlan/inf:%d/multi/%%s"
 #define SET_WLAN_SUB   "rgdb -s /wlan/inf:%d/multi/index:%d/%%s"
@@ -233,6 +237,9 @@ int exec_wlan_config(void)
 	int ret = 0;
 	char cmd[256] = {0};
 	char prefix[128] = {0};
+#ifdef AP200_XML	
+	char xml_prefix[128] = {0};
+#endif	
 	char delete_str[20] = {0};
 	char ssid_str[80] = {0};
 	char hidden_str[20] = {0};
@@ -280,6 +287,9 @@ int exec_wlan_config(void)
 		}
 
 		memset(prefix, 0, sizeof(prefix));
+#ifdef AP200_XML
+		memset(xml_prefix, 0, sizeof(xml_prefix));
+#endif	
 		memset(delete_str, 0, sizeof(delete_str));
 		memset(ssid_str, 0, sizeof(ssid_str));
 		memset(hidden_str, 0, sizeof(hidden_str));
@@ -317,12 +327,23 @@ int exec_wlan_config(void)
 
 			if(f){
 				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_PRIM, radio_index);
+#ifdef AP200_XML
+				snprintf(xml_prefix, sizeof(xml_prefix)-1, XMLSET_WLAN_SSID_PRIM, radio_index);
+#endif	
 			}else{
 				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_SUB, radio_index, i);
+#ifdef AP200_XML
+				snprintf(xml_prefix, sizeof(prefix)-1, XMLSET_WLAN_SSID_SUB, radio_index, i);
+#endif	
 			}
 
+#ifdef AP200_XML
+			xmldbc_set(NULL,0, xml_prefix, g_ssid_dev[i]->ssid);
+			LOG_INFO("xmldbc_set: %s, %s.\n", xml_prefix, g_ssid_dev[i]->ssid);
+#else
 			snprintf(cmd, sizeof(cmd)-1, prefix, ssid_str);
 			DM_SYSTEM(cmd);
+#endif	
 			snprintf(cmd, sizeof(cmd)-1, prefix, hidden_str);
 			DM_SYSTEM(cmd);
 			snprintf(cmd, sizeof(cmd)-1, prefix, enc_type_str);
