@@ -193,7 +193,9 @@ void * pthread_httpserver(void *arg)
 		ret1 = get_user_mac_dev_by_ip(client_ip_str, mac, sizeof(mac) - 1, ifname, sizeof(ifname) - 1);
 		ret2 = get_staid_by_mac(staid, sizeof(staid) - 1, mac);
 		ret3 = get_ssid_portal_by_dev(ssid, sizeof(ssid), portal, sizeof(portal), ifname);
-		if(ret1 || ret2 || ret3){
+		if(ret1 || ret2 || ret3 || !strcmp(staid, "0.0.0.0")){
+			LOG_INFO("Error: ret1=%d, ret2=%d, ret3=%d, staid=%s, client_ip=%s, mac=%s.\n", 
+					ret1, ret2, ret3, staid, client_ip_str, mac);
 			goto close;
 		}
 

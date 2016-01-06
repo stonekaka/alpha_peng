@@ -85,7 +85,7 @@ static int stainfo_show(struct seq_file *f, void *v)
 
 	for(i = 0; i < STA_HASH_SIZE; i++) {
 		if(0 == i){
-			seq_printf(f, "HASH\tMAC\t\t\tIP \t\tI|A|U|P|W|B|S\tIFNAME\tUP\t\tUP_G\tDOWN\t\tDOWN_G\tW_TOUT\n");
+			seq_printf(f, "HASH\tMAC\t\t\tIP \t\t\tI|A|U|P|W|B|S\tIFNAME\tUP\t\tUP_G\tDOWN\t\tDOWN_G\tW_TOUT\n");
 		}
 		head = &sta_table[i];
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,38)
