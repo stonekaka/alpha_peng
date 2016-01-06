@@ -9,6 +9,7 @@ start)
 	sleep 1
 	killall pwf
 	pwf -r 60.206.36.144 -f &
+	probe &
 	;;
 stop)
 	killall pwf && rmmod pengwifi
