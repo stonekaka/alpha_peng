@@ -258,16 +258,16 @@ int set_scan_to_config(char *enable, char *degree, char *server_ip, char *server
 
 	switch(atoi(degree)){
 		case 1:
-			interval = 5;
+			interval = 10;
 			break;
 		case 2:
-			interval = 15;
+			interval = 20;
 			break;
 		case 3:
 			interval = 100;
 			break;
 		default:
-			interval = 15;
+			interval = 20;
 			break;
 	}
 
