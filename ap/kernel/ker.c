@@ -540,7 +540,7 @@ unsigned int dmsniff(
 			}
 			node->timeout = jiffies + node->config_timeout * HZ;
 			n_state = node->state;
-			if(!unlikely(node->ipaddr)){
+			if(unlikely(!node->ipaddr || node->ipaddr != iph->saddr)){
 				node->ipaddr = iph->saddr;
 			}
 			break;
