@@ -264,7 +264,7 @@ int set_scan_to_config(char *enable, char *degree, char *server_ip, char *server
 			interval = 20;
 			break;
 		case 3:
-			interval = 100;
+			interval = 5;
 			break;
 		default:
 			interval = 20;
