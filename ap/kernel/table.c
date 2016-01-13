@@ -188,7 +188,7 @@ int do_add_sta(unsigned char *mac, unsigned int ipaddr, char *ifname)
     maxtime_tmp = maxtime_tmp?maxtime_tmp:12*3600;
 	tmp->config_max_time = maxtime_tmp;
 	tmp->max_time = jiffies + maxtime_tmp * HZ;
-	tmp->config_timeout = timeout_tmp?timeout_tmp:3600;
+	tmp->config_timeout = timeout_tmp?timeout_tmp:600;
 	tmp->timeout = jiffies + tmp->config_timeout * HZ;
 	memcpy(tmp->ifname, ifname, IFNAMSIZ);
 	//printk(KERN_ALERT"add: %02x:%02x:%02x:%02x:%02x:%02x", tmp->mac[0], tmp->mac[1],tmp->mac[2],tmp->mac[3],tmp->mac[4],tmp->mac[5]);
