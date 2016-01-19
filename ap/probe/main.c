@@ -46,8 +46,10 @@ int get_probe_conf(void)
 
 	fp = fopen("/tmp/pwf_probe", "r");
 	if(NULL == fp){
-		LOG_INFO("fopen error.\n");
+		//LOG_INFO("fopen error.\n");
 		return -1;
+	}else{
+		LOG_INFO("probe: read config ok.\n");
 	}
 	
 	/*enable=1 server=1.1.1.1 port=8084 interval=0*/
@@ -117,7 +119,7 @@ int main(void)
     }
 
 	while(1){
-		LOG_INFO("main loop\n");
+		//LOG_INFO("main loop\n");
 		if(0 == g_pthread_init){
 			pthread_init();
 		}

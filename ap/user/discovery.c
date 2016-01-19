@@ -15,12 +15,13 @@
 #include "cJSON.h"
 
 extern char *g_acname;
-extern char g_test_acname[128];
-extern char g_acpath[128];
+extern char *g_test_acname;
+extern char *g_acpath;
 extern int g_acport;
+extern char g_ap_label_mac[];
 
 #define MAIN_SERVER "https://lbps.ezlink-wifi.com"
-const char data[]="{\"method\":\"config\",\"params\":{\"data\":{\"idcode\":\"6A446YXI68\",\"passwd\":\"6A446YXI68\",\"pppoeid\":\"6A446YXI68\",\"ip\":\"192.168.3.168\"},\"serviceType\":2}}";
+const char data[]="{\"method\":\"config\",\"params\":{\"data\":{\"idcode\":\"%s\",\"passwd\":\"\",\"pppoeid\":\"%s\",\"ip\":\"%s\"},\"serviceType\":5}}";
  
 struct WriteThis {
   const char *readptr;
@@ -87,11 +88,16 @@ int lbps_discovery(void *arg)
   CURL *curl;
   CURLcode res;
   struct recv_string s;
+  char ip[32] = {0};
+  char buf[256] = {0};
  
   struct WriteThis pooh;
  
-  pooh.readptr = data;
-  pooh.sizeleft = (long)strlen(data);
+  get_wan_ip(ip, sizeof(ip)-1);
+
+  snprintf(buf, sizeof(buf)-1, data, g_ap_label_mac, g_ap_label_mac, ip);
+  pooh.readptr = buf;
+  pooh.sizeleft = (long)strlen(buf);
  
   /* In windows, this will init the winsock stuff */ 
   res = curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -119,7 +125,7 @@ int lbps_discovery(void *arg)
     /* we want to use our own read function */ 
     curl_easy_setopt(curl, CURLOPT_READFUNCTION, read_callback);
  
-    /* pointer to pass to our read function */ 
+    /* pointer to pass to our read function */
     curl_easy_setopt(curl, CURLOPT_READDATA, &pooh);
  
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);

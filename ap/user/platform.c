@@ -305,9 +305,9 @@ int exec_wlan_config(void)
 			}
 
 			/**do nothing if radio is disable**/
-			/*if((radio_index == 1 && !radio_2g.enabled) || (radio_index == 2 && !radio_5g.enabled)){
+			if((radio_index == 1 && !radio_2g.enabled) || (radio_index == 2 && !radio_5g.enabled)){
 				continue;
-			}*/
+			}
 
 			snprintf(ssid_str, sizeof(ssid_str)-1, "ssid %s", g_ssid_dev[i]->ssid);
 			if(f){
