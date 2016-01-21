@@ -149,9 +149,9 @@ int exec_radio_config(void)
 	if(radio_2g.htmode == 3){
 		snprintf(htmode_str, sizeof(htmode_str)-1, SET_2G"cwmmode %d", 1);
 	}else if(radio_2g.htmode == 2){
-		snprintf(htmode_str, sizeof(htmode_str)-1, SET_2G"cwmmode %d", 2);
+		snprintf(htmode_str, sizeof(htmode_str)-1, SET_2G"cwmmode %d", 1);
 	}else if(radio_2g.htmode == 1){
-		snprintf(htmode_str, sizeof(htmode_str)-1, SET_2G"cwmmode %d", 3);
+		snprintf(htmode_str, sizeof(htmode_str)-1, SET_2G"cwmmode %d", 0);
 	}
 
 	if(radio_2g.channel == 0){
@@ -163,8 +163,14 @@ int exec_radio_config(void)
 
 	if(radio_2g.txpower == 255){//auto txpower
 		snprintf(txpower_str, sizeof(txpower_str)-1, SET_2G"txpower %d", 20);//?????	
-	}else if(radio_2g.txpower >=0 && radio_2g.txpower <= 30){
-		snprintf(txpower_str, sizeof(txpower_str)-1, SET_2G"txpower %d", radio_2g.txpower);
+	}else if(radio_2g.txpower >=16 && radio_2g.txpower <= 30){
+		snprintf(txpower_str, sizeof(txpower_str)-1, SET_2G"txpower %d", 1); //1: 100%, 2: 50%, 3: 25%, 4: 12%
+	}else if(radio_2g.txpower >=11 && radio_2g.txpower <= 15){
+		snprintf(txpower_str, sizeof(txpower_str)-1, SET_2G"txpower %d", 2);
+	}else if(radio_2g.txpower >=6 && radio_2g.txpower <= 10){
+		snprintf(txpower_str, sizeof(txpower_str)-1, SET_2G"txpower %d", 3);
+	}else if(radio_2g.txpower >=0 && radio_2g.txpower <= 5){
+		snprintf(txpower_str, sizeof(txpower_str)-1, SET_2G"txpower %d", 4);
 	}
 
 	snprintf(enabled_str, sizeof(enabled_str)-1, SET_2G"enabled %d", radio_2g.enabled);
@@ -184,7 +190,15 @@ int exec_radio_config(void)
 	memset(enabled_str, 0, sizeof(enabled_str));
 
 	if(radio_5g.channel == 0){
-		snprintf(autochannel_str, sizeof(autochannel_str)-1, SET_5G"autochannel %d", 1);
+		//snprintf(autochannel_str, sizeof(autochannel_str)-1, SET_5G"autochannel %d", 1);
+		time_t t = time(NULL);
+		int chn = 149;
+		if(t%5 == 0)chn = 149;
+		else if(t%5 == 1)chn = 153;
+		else if(t%5 == 2)chn = 157;
+		else if(t%5 == 3)chn = 161;
+		else if(t%5 == 4)chn = 165;
+		snprintf(channel_str, sizeof(channel_str)-1, SET_5G"channel %d", chn); //ap200 5G auto channel is 44, 44 may not work on iphone
 	}else if(radio_5g.channel > 0 && radio_5g.channel <= 165){
 		snprintf(autochannel_str, sizeof(autochannel_str)-1, SET_5G"autochannel %d", 0);
 		snprintf(channel_str, sizeof(channel_str)-1, SET_5G"channel %d", radio_5g.channel);
@@ -192,8 +206,14 @@ int exec_radio_config(void)
 
 	if(radio_5g.txpower == 255){//auto txpower
 		snprintf(txpower_str, sizeof(txpower_str)-1, SET_5G"txpower %d", 20);//?????	
-	}else if(radio_5g.txpower >=0 && radio_5g.txpower <= 30){
-		snprintf(txpower_str, sizeof(txpower_str)-1, SET_5G"txpower %d", radio_5g.txpower);
+	}else if(radio_5g.txpower >=16 && radio_5g.txpower <= 30){
+		snprintf(txpower_str, sizeof(txpower_str)-1, SET_5G"txpower %d", 1);
+	}else if(radio_5g.txpower >=11 && radio_5g.txpower <= 15){
+		snprintf(txpower_str, sizeof(txpower_str)-1, SET_5G"txpower %d", 2);
+	}else if(radio_5g.txpower >=6 && radio_5g.txpower <= 10){
+		snprintf(txpower_str, sizeof(txpower_str)-1, SET_5G"txpower %d", 3);
+	}else if(radio_5g.txpower >=0 && radio_5g.txpower <= 5){
+		snprintf(txpower_str, sizeof(txpower_str)-1, SET_5G"txpower %d", 4);
 	}
 	
 	snprintf(enabled_str, sizeof(enabled_str)-1, SET_5G"enabled %d", radio_5g.enabled);
