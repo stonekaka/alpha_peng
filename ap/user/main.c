@@ -762,7 +762,7 @@ int main(int argc, char **argv)
 				}
 			}
 
-			if((svc_cnt >= (HEARTBEAT_INTERVAL * 1000 / WS_SERVICE_INTERVAL)) &&
+			if((1 == g_connection_flag) && (svc_cnt >= (HEARTBEAT_INTERVAL * 1000 / WS_SERVICE_INTERVAL)) &&
 			    (0 == (svc_cnt % (HEARTBEAT_INTERVAL * 1000 / WS_SERVICE_INTERVAL)))){ //start at the first 30 second, and every 30 seconds
 				g_heartbeat_flag += 1;
 				LOG_INFO("g_heartbeat_flag=%d\n", g_heartbeat_flag);
