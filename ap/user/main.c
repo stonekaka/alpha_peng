@@ -716,6 +716,11 @@ int main(int argc, char **argv)
 
 				//discovery websocket server
 				lbps_discovery(NULL);
+				if(!g_acname[0]){
+					snprintf(g_acname, MAX_NAME_SIZE-1, "%s", "bap.ezlink-wifi.com");
+					snprintf(g_acpath, MAX_NAME_SIZE-1, "%s", "/perception");
+					g_acport=8080;
+				}
 			}
 		}
 

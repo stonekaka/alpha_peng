@@ -8,8 +8,8 @@ start)
 	insmod /lib/modules/pengwifi.ko	
 	sleep 1
 	killall pwf
-	pwf -r 60.206.36.144 -f &
-#	pwf -f &
+#	pwf -r 60.206.36.144 -f &
+	pwf -f -s &
 	probe &
 	;;
 stop)

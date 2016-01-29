@@ -119,6 +119,9 @@ int lbps_discovery(void *arg)
     /* First set the URL that is about to receive our POST. */ 
     curl_easy_setopt(curl, CURLOPT_URL, MAIN_SERVER);
  
+    /* complete within xx seconds */
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);
+
     /* Now specify we want to POST data */ 
     curl_easy_setopt(curl, CURLOPT_POST, 1L);
  
