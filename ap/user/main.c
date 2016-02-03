@@ -691,18 +691,19 @@ int main(int argc, char **argv)
 		free_all_consumed_node(&list_head_recv);
 		pthread_mutex_unlock(&mutex_r);
 
-		if(context){
-			libwebsocket_context_destroy(context);
-		}
+		if(!context){
+			//libwebsocket_context_destroy(context);
+		//}
 
-		context = NULL;
-		context = libwebsocket_create_context(&info);
-		if (context == NULL) {
-			LOG_INFO("Creating libwebsocket context failed\n");
-			ap_change_state(AP_IDLE);
-			sleep(30);
-			g_idle_cnt++;
-			continue;
+			//context = NULL;
+			context = libwebsocket_create_context(&info);
+			if (context == NULL) {
+				LOG_INFO("Creating libwebsocket context failed\n");
+				ap_change_state(AP_IDLE);
+				sleep(30);
+				g_idle_cnt++;
+				continue;
+			}
 		}
 
 		printf("compare: %d:%s\n", g_idle_cnt, g_acname);
@@ -725,7 +726,7 @@ int main(int argc, char **argv)
 		}
 
 		/* create a client websocket */
-		LOG_INFO("acname:%s, acport:%d, acpath:%s\n", g_acname, g_acport, g_acpath);
+		LOG_INFO("acname:%s, acport:%d, acpath:%s, ssl:%d\n", g_acname, g_acport, g_acpath, use_ssl);
 		g_wsi = NULL;
 		g_wsi = libwebsocket_client_connect(context,
 			g_acname, g_acport, use_ssl, g_acpath,
