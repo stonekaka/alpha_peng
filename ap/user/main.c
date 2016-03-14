@@ -66,7 +66,8 @@ char *str_ap_state[] = {"","AP_IDLE","AP_DISCOVERY","AP_JOIN_S1","AP_JOIN_S2","A
 
 extern int g_msg_seq;
 extern int g_msg_seq_r;
-extern char *g_ap_last_config;
+//extern char *g_ap_last_config;
+caddr_t g_ap_last_config;
 
 enum demo_protocols {
 
@@ -147,12 +148,22 @@ int init_global_mem(void)
 	init_ssid_ifname();	
 
 	if(NULL == g_ap_last_config){
+#if 0		
 		g_ap_last_config = (char *)malloc(MAX_MSG_SIZE);
 		if(!g_ap_last_config){
 			LOG_INFO("g_ap_last_config malloc failed.\n");
 			return -1;	
 		}
 		memset(g_ap_last_config, 0, MAX_MSG_SIZE);
+#endif
+		g_ap_last_config = mmap(0, MAX_MSG_SIZE, PROT_READ | PROT_WRITE,
+				MAP_ANON | MAP_SHARED, -1, 0);
+		if(g_ap_last_config == (caddr_t) -1){
+			LOG_INFO("g_ap_last_config mmap failed.\n");
+			return -1;
+		}
+
+				
 	}
 
 	g_acname = (char *)malloc(sizeof(char) * MAX_NAME_SIZE);
@@ -694,100 +705,113 @@ int main(int argc, char **argv)
 		free_all_consumed_node(&list_head_recv);
 		pthread_mutex_unlock(&mutex_r);
 
-		if(!context){
-			//libwebsocket_context_destroy(context);
-		//}
+		pid_t pid = 0;
+		pid=fork();
+		if(pid < 0){
+			LOG_INFO("fork error.\n");
+			sleep(10);
+		}else if(0 == pid){
 
-			//context = NULL;
-			context = libwebsocket_create_context(&info);
-			if (context == NULL) {
-				LOG_INFO("Creating libwebsocket context failed\n");
-				ap_change_state(AP_IDLE);
-				sleep(30);
-				g_idle_cnt++;
-				continue;
-			}
-		}
+				if(!context){
+					//libwebsocket_context_destroy(context);
+				//}
 
-		printf("compare: %d:%s\n", g_idle_cnt, g_acname);
-		if((g_idle_cnt >= 1) || (0 == g_acname[0])){
-			ap_change_state(AP_DISCOVERY);
-			if(g_test_acname[0]){
-				snprintf(g_acname, MAX_NAME_SIZE-1, "%s", g_test_acname);
-				snprintf(g_acpath, MAX_NAME_SIZE-1, "%s", "/perception");
-				g_acport=8080;
-			}else{
-
-				//discovery websocket server
-				lbps_discovery(NULL);
-				if(!g_acname[0]){
-					snprintf(g_acname, MAX_NAME_SIZE-1, "%s", "bap.ezlink-wifi.com");
-					snprintf(g_acpath, MAX_NAME_SIZE-1, "%s", "/perception");
-					g_acport=8080;
+					//context = NULL;
+					context = libwebsocket_create_context(&info);
+					if (context == NULL) {
+						LOG_INFO("Creating libwebsocket context failed\n");
+						ap_change_state(AP_IDLE);
+						sleep(30);
+						g_idle_cnt++;
+						continue;
+					}
 				}
-			}
-		}
 
-		/* create a client websocket */
-		LOG_INFO("acname:%s, acport:%d, acpath:%s, ssl:%d\n", g_acname, g_acport, g_acpath, use_ssl);
-		g_wsi = NULL;
-		g_wsi = libwebsocket_client_connect(context,
-			g_acname, g_acport, use_ssl, g_acpath,
-			g_acname, g_acname,
-			protocols[PROTOCOL_LWS_KEEPALIVE].name, ietf_version);
+				printf("compare: %d:%s\n", g_idle_cnt, g_acname);
+				if((g_idle_cnt >= 1) || (0 == g_acname[0])){
+					ap_change_state(AP_DISCOVERY);
+					if(g_test_acname[0]){
+						snprintf(g_acname, MAX_NAME_SIZE-1, "%s", g_test_acname);
+						snprintf(g_acpath, MAX_NAME_SIZE-1, "%s", "/perception");
+						g_acport=8080;
+					}else{
 
-		if (g_wsi == NULL) {
-			LOG_INFO("libwebsocket "
-				      " connect failed\n");
-			ret = 1;
-			ap_change_state(AP_IDLE);
-			sleep(30);
-			g_idle_cnt++;
-			continue;
-		}
+						//discovery websocket server
+						lbps_discovery(NULL);
+						if(!g_acname[0]){
+							snprintf(g_acname, MAX_NAME_SIZE-1, "%s", "bap.ezlink-wifi.com");
+							snprintf(g_acpath, MAX_NAME_SIZE-1, "%s", "/perception");
+							g_acport=8080;
+						}
+					}
+				}
 
-		g_idle_cnt = 0;
+				/* create a client websocket */
+				LOG_INFO("acname:%s, acport:%d, acpath:%s, ssl:%d\n", g_acname, g_acport, g_acpath, use_ssl);
+				g_wsi = NULL;
+				g_wsi = libwebsocket_client_connect(context,
+					g_acname, g_acport, use_ssl, g_acpath,
+					g_acname, g_acname,
+					protocols[PROTOCOL_LWS_KEEPALIVE].name, ietf_version);
 
-		if(0 == g_pthread_init){
-			pthread_init(g_wsi, context);	
-		}
-
-		LOG_INFO("Waiting for connect...\n");
-		n = 0;
-		svc_cnt = 0;
-		g_heartbeat_flag = 0;
-		while (n >= 0 && !was_closed && !force_exit) {
-			n = libwebsocket_service(context, WS_SERVICE_INTERVAL);
-			svc_cnt++;	
-			if(svc_cnt >= 65534 ){
-				svc_cnt = 0;
-			}
-			if((g_state > AP_DISCOVERY) && (g_state < AP_OFFLINE)){
-				if(0 == g_connection_flag){
+				if (g_wsi == NULL) {
+					LOG_INFO("libwebsocket "
+							  " connect failed\n");
+					ret = 1;
 					ap_change_state(AP_IDLE);
 					sleep(30);
-
-					break;
+					g_idle_cnt++;
+					continue;
 				}
-			}
 
-			if((1 == g_connection_flag) && (svc_cnt >= (HEARTBEAT_INTERVAL * 1000 / WS_SERVICE_INTERVAL)) &&
-			    (0 == (svc_cnt % (HEARTBEAT_INTERVAL * 1000 / WS_SERVICE_INTERVAL)))){ //start at the first 30 second, and every 30 seconds
-				g_heartbeat_flag += 1;
-				LOG_INFO("g_heartbeat_flag=%d\n", g_heartbeat_flag);
-			}
-		
-			if(g_heartbeat_flag > MAX_HEARTBEAT_TRYS){
-				LOG_INFO("reach max heart beat trys\n");
+				g_idle_cnt = 0;
 
-				break;	
-			}
+				if(0 == g_pthread_init){
+					pthread_init(g_wsi, context);	
+				}
 
-			if(g_state == AP_OFFLINE){
-				break;
-			}
+				LOG_INFO("Waiting for connect...\n");
+				n = 0;
+				svc_cnt = 0;
+				g_heartbeat_flag = 0;
+				while (n >= 0 && !was_closed && !force_exit) {
+					n = libwebsocket_service(context, WS_SERVICE_INTERVAL);
+					svc_cnt++;	
+					if(svc_cnt >= 65534 ){
+						svc_cnt = 0;
+					}
+					if((g_state > AP_DISCOVERY) && (g_state < AP_OFFLINE)){
+						if(0 == g_connection_flag){
+							ap_change_state(AP_IDLE);
+							sleep(30);
+
+							break;
+						}
+					}
+
+					if((1 == g_connection_flag) && (svc_cnt >= (HEARTBEAT_INTERVAL * 1000 / WS_SERVICE_INTERVAL)) &&
+						(0 == (svc_cnt % (HEARTBEAT_INTERVAL * 1000 / WS_SERVICE_INTERVAL)))){ //start at the first 30 second, and every 30 seconds
+						g_heartbeat_flag += 1;
+						LOG_INFO("g_heartbeat_flag=%d\n", g_heartbeat_flag);
+					}
+				
+					if(g_heartbeat_flag > MAX_HEARTBEAT_TRYS){
+						LOG_INFO("reach max heart beat trys\n");
+
+						break;	
+					}
+
+					if(g_state == AP_OFFLINE){
+						break;
+					}
+				}
+				exit(0);
+		}else if(pid > 0){
+			LOG_INFO("in parent process. wait for child:[%d]\n", pid);
+			int status;
+			waitpid(pid, &status, 0);
+			LOG_INFO("in parent process. child [%d] exit, status:[%d]\n", pid, status);
 		}
-
 		sleep(15);
 	}
 

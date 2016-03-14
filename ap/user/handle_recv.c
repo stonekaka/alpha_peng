@@ -33,7 +33,8 @@ extern FILE *g_log_fp;
 extern char g_ap_label_mac[];
 extern char g_ap_label_mac_nocol[];
 
-char *g_ap_last_config;
+//char *g_ap_last_config;
+caddr_t g_ap_last_config;
 char g_auth_code[65] = "00000";//"4eb44768d1e84d36134a0f4a24d9086d";
 struct radio_config radio_2g, radio_5g;
 

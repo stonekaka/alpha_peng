@@ -258,7 +258,7 @@ typedef unsigned __int64 u_int64_t;
 #define SPEC_LATEST_SUPPORTED 13
 #endif
 #ifndef AWAITING_TIMEOUT
-#define AWAITING_TIMEOUT 5
+#define AWAITING_TIMEOUT 60
 #endif
 #ifndef CIPHERS_LIST_STRING
 #define CIPHERS_LIST_STRING "DEFAULT"
