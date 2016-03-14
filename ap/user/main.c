@@ -409,7 +409,10 @@ void handle_send_to_ac(struct libwebsocket *wsi)
 		libwebsocket_write(wsi, (unsigned char *)tmp, strlen(tmp), opts | LWS_WRITE_TEXT);
 		g_state = AP_JOIN_S2;
 	}else if(AP_JOIN_S3 == g_state){
-		char tmp[] = "{\"type\":\"notification\",\"wsid\":\"888\",\"from\":\"7OL6J42GN\",\"data\":{\"msgtype\":\"reboot\",\"message\":\"路由器上线成功\"}}";
+		char fmt[] = "{\"type\":\"notification\",\"wsid\":\"888\",\"from\":\"%s\",\"data\":{\"msgtype\":\"reboot\",\"message\":\"路由器上线成功\"}}";
+		char tmp[256] = {0};
+
+		snprintf(tmp, sizeof(tmp)-1, fmt, g_ap_label_mac);
 		LOG_INFO("%d, msg=%s\nlen=%d\n", __LINE__, tmp, strlen(tmp));
 		libwebsocket_write(wsi, (unsigned char *)tmp, strlen(tmp), opts | LWS_WRITE_TEXT);	
 		g_state = AP_JOIN_S4;	
