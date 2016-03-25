@@ -35,7 +35,7 @@ extern FILE *g_log_fp;
 
 int g_state;
 int g_connection_flag = 0;
-int g_idle_cnt = 3;
+//int g_idle_cnt = 3;
 #define WS_SERVICE_INTERVAL  50 //ms
 
 int g_heartbeat_flag = 0;
@@ -68,6 +68,13 @@ extern int g_msg_seq;
 extern int g_msg_seq_r;
 //extern char *g_ap_last_config;
 caddr_t g_ap_last_config;
+caddr_t g_state_shadow;
+caddr_t g_acname_shadow;
+caddr_t g_auth_code_shadow;
+
+caddr_t g_ssid_dev_dev_shadow;
+caddr_t g_ssid_dev_ssid_shadow;
+caddr_t g_ssid_dev_portal_url_shadow;
 
 enum demo_protocols {
 
@@ -174,6 +181,48 @@ int init_global_mem(void)
 		return -1;	
 	}
 
+	g_state_shadow = mmap(0, sizeof(int), PROT_READ | PROT_WRITE,
+				MAP_ANON | MAP_SHARED, -1, 0);
+	if(g_state_shadow == (caddr_t) -1){
+		LOG_INFO("g_state_shadow mmap failed.\n");
+		return -1;
+	}
+
+	g_acname_shadow = mmap(0, MAX_NAME_SIZE, PROT_READ | PROT_WRITE,
+				MAP_ANON | MAP_SHARED, -1, 0);
+	if(g_acname_shadow == (caddr_t) -1){
+		LOG_INFO("g_acname_shadow mmap failed.\n");
+		return -1;
+	}
+
+	g_auth_code_shadow = mmap(0, 65, PROT_READ | PROT_WRITE,
+			MAP_ANON | MAP_SHARED, -1, 0);
+	if(g_auth_code_shadow == (caddr_t) -1){
+			LOG_INFO("g_auth_code_shadow mmap failed.\n");
+			return -1;
+	}
+
+	g_ssid_dev_dev_shadow = mmap(0, MAX_WLAN_COUNT*sizeof(g_ssid_dev[0]->dev), PROT_READ | PROT_WRITE,
+			MAP_ANON | MAP_SHARED, -1, 0);
+	if(g_ssid_dev_dev_shadow == (caddr_t) -1){
+		LOG_INFO("g_ssid_dev_dev_shadow mmap failed.\n");
+		return -1;
+	}
+
+	g_ssid_dev_ssid_shadow = mmap(0, MAX_WLAN_COUNT*sizeof(g_ssid_dev[0]->ssid), PROT_READ | PROT_WRITE,
+			MAP_ANON | MAP_SHARED, -1, 0);
+	if(g_ssid_dev_ssid_shadow == (caddr_t) -1){
+		LOG_INFO("g_ssid_dev_ssid_shadow mmap failed.\n");
+		return -1;
+	}
+
+	g_ssid_dev_portal_url_shadow = mmap(0, MAX_WLAN_COUNT*sizeof(g_ssid_dev[0]->portal_url), PROT_READ | PROT_WRITE,
+			MAP_ANON | MAP_SHARED, -1, 0);
+	if(g_ssid_dev_portal_url_shadow == (caddr_t) -1){
+		LOG_INFO("g_ssid_dev_portal_url_shadow mmap failed.\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -237,6 +286,8 @@ void ap_change_state(int state)
 	LOG_INFO("*********************************************************\n");
 	LOG_INFO("*     ap state change to   %-29s*\n",  str_ap_state[g_state]);
 	LOG_INFO("*********************************************************\n");
+
+	*g_state_shadow = g_state;
 
 	if(g_state >= AP_OFFLINE || g_state <= AP_AUTH_REQ){
 		set_ap_online(0);	
@@ -439,17 +490,23 @@ void handle_send_to_ac(struct libwebsocket *wsi)
 	return;
 }
 
-int pthread_init(struct libwebsocket *wsi, struct libwebsocket_context *context)
+int pthread_init(struct libwebsocket *wsi, struct libwebsocket_context *context, struct pthread_routine_tool **tool)
 {
-	g_pthread_init = 1;
-	struct pthread_routine_tool tool;
-	tool.wsi = wsi;
-	tool.context = context;
-
-	pthread_t pid, pid_nl, pid_recv, pid_hser;
+	pthread_t pid, pid_nl, pid_recv;
 	pthread_attr_t attr;
-	pthread_attr_init(&attr);
 	size_t stacksize;
+
+	*tool = (struct pthread_routine_tool *) malloc(sizeof(struct pthread_routine_tool));
+	if(NULL == *tool){
+		LOG_INFO("pthread_routine_tool malloc failed.\n");
+		return -1;
+	}
+	memset(*tool, 0, sizeof(struct pthread_routine_tool));
+
+	(*tool)->wsi = wsi;
+	(*tool)->context = context;
+
+	pthread_attr_init(&attr);
 	stacksize = (double) 300*1024;
 
 	int res = pthread_attr_setstacksize (&attr, stacksize);
@@ -459,7 +516,7 @@ int pthread_init(struct libwebsocket *wsi, struct libwebsocket_context *context)
 
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_init(&mutex_r, NULL);
-	pthread_create(&pid, &attr, pthread_nl_consume, &tool);
+	pthread_create(&pid, &attr, pthread_nl_consume, *tool);
 	pthread_detach(pid);
 
 	stacksize = (double) 2*1024*1024;
@@ -472,8 +529,36 @@ int pthread_init(struct libwebsocket *wsi, struct libwebsocket_context *context)
 	pthread_detach(pid_nl);
 	pthread_create(&pid_recv, &attr, pthread_recv, NULL);
 	pthread_detach(pid_recv);
+
+	g_pthread_init = 1;
+
+	return 0;
+}
+
+int pthread_local_exit(struct pthread_routine_tool *tool)
+{
+	if(tool){
+		free(tool);
+	}
+
+	return 0;
+}
+
+int pthread_httpserver_init()
+{
+	pthread_t pid_hser;
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	size_t stacksize;
+	stacksize = (double) 300*1024;
+
+	int res = pthread_attr_setstacksize (&attr, stacksize);
+	if (res != 0) {
+		LOG_INFO("pthread_attr: error\n");
+	}
+
 	pthread_create(&pid_hser, &attr, pthread_httpserver, NULL);
-	pthread_detach(pid_recv);
+	pthread_detach(pid_hser);
 
 	return 0;
 }
@@ -499,7 +584,7 @@ callback_lws_keepalive(struct libwebsocket_context *context,
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
 		fprintf(stderr, "Connect with server error.\n");
 		ws_log("Connect with server error.\n");
-		g_idle_cnt++;
+		//g_idle_cnt++;
 		g_connection_flag = 0;
 		break;
 
@@ -602,6 +687,7 @@ int main(int argc, char **argv)
 	int port = 7681;
 	int use_ssl = 0;
 	struct libwebsocket_context *context = NULL;
+	struct pthread_routine_tool *tool = NULL;
 	int ietf_version = -1; /* latest */
 	struct lws_context_creation_info info;
 	int svc_cnt = 0;
@@ -694,8 +780,10 @@ int main(int argc, char **argv)
 	info.gid = -1;
 	info.uid = -1;
 
+	pthread_httpserver_init();
+
 	while(!force_exit){
-		pthread_mutex_lock(&mutex);
+		/*pthread_mutex_lock(&mutex);
 		consume_all_node(&list_head_send);
 		free_all_consumed_node(&list_head_send);
 		pthread_mutex_unlock(&mutex);
@@ -703,7 +791,7 @@ int main(int argc, char **argv)
 		pthread_mutex_lock(&mutex_r);
 		consume_all_node(&list_head_recv);
 		free_all_consumed_node(&list_head_recv);
-		pthread_mutex_unlock(&mutex_r);
+		pthread_mutex_unlock(&mutex_r);*/
 
 		pid_t pid = 0;
 		pid=fork();
@@ -722,13 +810,13 @@ int main(int argc, char **argv)
 						LOG_INFO("Creating libwebsocket context failed\n");
 						ap_change_state(AP_IDLE);
 						sleep(30);
-						g_idle_cnt++;
-						continue;
+						//g_idle_cnt++;
+						exit(0);
 					}
 				}
 
-				printf("compare: %d:%s\n", g_idle_cnt, g_acname);
-				if((g_idle_cnt >= 1) || (0 == g_acname[0])){
+				printf("start: %s\n", /*g_idle_cnt,*/ g_acname);
+				if(/*(g_idle_cnt >= 1) || */(0 == g_acname[0])){
 					ap_change_state(AP_DISCOVERY);
 					if(g_test_acname[0]){
 						snprintf(g_acname, MAX_NAME_SIZE-1, "%s", g_test_acname);
@@ -746,6 +834,8 @@ int main(int argc, char **argv)
 					}
 				}
 
+				memcpy(g_acname_shadow, g_acname, MAX_NAME_SIZE);
+
 				/* create a client websocket */
 				LOG_INFO("acname:%s, acport:%d, acpath:%s, ssl:%d\n", g_acname, g_acport, g_acpath, use_ssl);
 				g_wsi = NULL;
@@ -760,14 +850,14 @@ int main(int argc, char **argv)
 					ret = 1;
 					ap_change_state(AP_IDLE);
 					sleep(30);
-					g_idle_cnt++;
-					continue;
+					//g_idle_cnt++;
+					exit(0);
 				}
 
-				g_idle_cnt = 0;
+				//g_idle_cnt = 0;
 
 				if(0 == g_pthread_init){
-					pthread_init(g_wsi, context);	
+					pthread_init(g_wsi, context, &tool);	
 				}
 
 				LOG_INFO("Waiting for connect...\n");
@@ -805,6 +895,10 @@ int main(int argc, char **argv)
 						break;
 					}
 				}
+
+				pthread_local_exit(tool);
+
+				sleep(15);
 				exit(0);
 		}else if(pid > 0){
 			LOG_INFO("in parent process. wait for child:[%d]\n", pid);

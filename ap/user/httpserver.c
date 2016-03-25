@@ -30,12 +30,19 @@
 #define HTTP_PORT 8012
 #define MAX_CONNECTION 200
 
-extern int g_state;
-extern char *g_acname;
+//extern int g_state;
+//extern char *g_acname;
 extern struct ssid_dev **g_ssid_dev;
 extern char g_ap_label_mac_nocol[];
+//extern char g_auth_code[];
 
-extern char g_auth_code[];
+extern caddr_t g_state_shadow;
+extern caddr_t g_acname_shadow;
+extern caddr_t g_auth_code_shadow;
+
+extern caddr_t g_ssid_dev_dev_shadow;
+extern caddr_t g_ssid_dev_ssid_shadow;
+extern caddr_t g_ssid_dev_portal_url_shadow;
 
 int get_user_mac_dev_by_ip(char *ip, char *mac, int maclen, char *dev, int devlen)
 {
@@ -94,6 +101,13 @@ int get_ssid_portal_by_dev(char *ssid, int slen, char *portal, int plen, char *d
 {
 	int i = 0;
 	char ifname[32] = {0};
+	int len_dev;
+	int len_ssid;
+	int len_portal_url;
+
+	len_dev = sizeof(g_ssid_dev[0]->dev);
+	len_ssid = sizeof(g_ssid_dev[0]->ssid);
+	len_portal_url = sizeof(g_ssid_dev[0]->portal_url);
 
 	if(!ssid || !dev || !portal){
 		LOG_INFO("%d:Error: bad arg\n", __LINE__);
@@ -103,10 +117,16 @@ int get_ssid_portal_by_dev(char *ssid, int slen, char *portal, int plen, char *d
 	for(i = 0; i < MAX_WLAN_COUNT; i++){
 		snprintf(ifname, sizeof(ifname)-1, "%s_", dev);
 		//printf("%s: %d: compare: [s]-%s- [r]-%s- [i]-%s-\n", __FUNCTION__, i, g_ssid_dev[i]->dev, dev, ifname);
-		if(strstr(g_ssid_dev[i]->dev, ifname)){
+		/*if(strstr(g_ssid_dev[i]->dev, ifname)){
 			snprintf(ssid, slen, "%s", g_ssid_dev[i]->ssid);
 			snprintf(portal, plen, "%s", g_ssid_dev[i]->portal_url);
 			//printf("%s: get dev=%s, ssid=%s, portal_url=%s\n", __FUNCTION__, dev, ssid, portal);
+			break;
+		}*/
+		if(strstr(g_ssid_dev_dev_shadow + i*len_dev, ifname)){
+			snprintf(ssid, slen, "%s", g_ssid_dev_ssid_shadow + i*len_ssid);
+			snprintf(portal, plen, "%s", g_ssid_dev_portal_url_shadow + i*len_portal_url);
+			printf("%s: get dev=%s, ssid=%s, portal_url=%s\n", __FUNCTION__, dev, ssid, portal);
 			break;
 		}
 	}
@@ -174,7 +194,7 @@ void * pthread_httpserver(void *arg)
 	signal(SIGCHLD, sighandle);
 	while(1) {
 
-		if(AP_RUNNING != g_state){
+		if(AP_RUNNING != *g_state_shadow){
 			sleep(3);
 			continue;
 		}
@@ -221,7 +241,7 @@ void * pthread_httpserver(void *arg)
 							"Content-Type: text/html\r\n"
 							"Connection: keep-alive\r\n"
 							"Location: %s%sgw_id=%s&wlanuserip=%s&wlanacname=%s&wlanapmac=%s&wlanusermac=%s&ssid=%s\r\n"
-							"\r\n", "pengwifi", portal, split_str, g_auth_code, staid, url_encode(g_acname), g_ap_label_mac_nocol, mac, ssid);
+							"\r\n", "pengwifi", portal, split_str, g_auth_code_shadow, staid, url_encode((char *)g_acname_shadow), g_ap_label_mac_nocol, mac, ssid);
 				if(_i && (_i%5 == 0)){
 					LOG_INFO(buf);
 				}

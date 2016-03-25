@@ -17,6 +17,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
 
 #include "pub.h"
 #include "util.h"

@@ -33,6 +33,12 @@ extern FILE *g_log_fp;
 extern char g_ap_label_mac[];
 extern char g_ap_label_mac_nocol[];
 
+extern caddr_t g_auth_code_shadow;
+
+extern caddr_t g_ssid_dev_dev_shadow;
+extern caddr_t g_ssid_dev_ssid_shadow;
+extern caddr_t g_ssid_dev_portal_url_shadow;
+
 //char *g_ap_last_config;
 caddr_t g_ap_last_config;
 char g_auth_code[65] = "00000";//"4eb44768d1e84d36134a0f4a24d9086d";
@@ -65,6 +71,25 @@ int enqueue_r_msg(char *msg)
 	LOG_INFO("produce_r: key=%d. total len=%d\n", node->key, list_length(list_head_recv));
 	pthread_mutex_unlock(&mutex_r);
 	
+	return 0;
+}
+
+int fill_ssid_dev_shadow(void)
+{
+	int i = 0;
+	int len_dev;
+	int len_ssid;
+	int len_portal_url;
+
+	len_dev = sizeof(g_ssid_dev[0]->dev);
+	len_ssid = sizeof(g_ssid_dev[0]->ssid);
+	len_portal_url = sizeof(g_ssid_dev[0]->portal_url);
+
+	for(i = 0; i < MAX_WLAN_COUNT; i++){
+		memcpy(g_ssid_dev_dev_shadow + i * len_dev, g_ssid_dev[i]->dev, len_dev);
+		memcpy(g_ssid_dev_ssid_shadow + i * len_ssid, g_ssid_dev[i]->ssid, len_ssid);
+		memcpy(g_ssid_dev_portal_url_shadow + i * len_portal_url, g_ssid_dev[i]->portal_url, len_portal_url);
+	}
 	return 0;
 }
 
@@ -1099,6 +1124,8 @@ static int handle_wifi_config(char *msg)
 
 	cJSON_Delete(json);
 
+	fill_ssid_dev_shadow();
+
 	return 0;
 }
 
@@ -1223,7 +1250,7 @@ static int handle_msg(char *msg)
 			snprintf(g_auth_code, sizeof(g_auth_code), "%s", "000000");
 			ap_change_state(AP_AUTH_REQ);
 		}
-			
+		memcpy(g_auth_code_shadow, g_auth_code, sizeof(g_auth_code));	
 	}else if(!strcmp("sta_control", json_type->valuestring)){
 		struct msg_to_ker *m = NULL;
 		struct sta_ctl sc;
