@@ -1,7 +1,9 @@
 
 #include /home/op/shiyan/netlink/kernel/../env.mk
 #include /home/op/gitlab/ezlink_api/build_patch/env.mk
-include /home/op/pengwifi/libwebsockets/env.mk.ap200
+include /home/op/pengwifi/libwebsockets/env.mk.dmgrouter2
+
+ccflags-y += -DMODE_ROUTE
 
 pengwifi-objs = ker.o table.o pengwifi_proc.o acl.o
 

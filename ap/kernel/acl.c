@@ -211,7 +211,11 @@ unsigned int dmacl(
 	if(0 == strncmp(idev->name, "eth", 3)){
 		read_lock(&g_table_lock);
 		head = &sta_table[get_sta_hash(eh->h_dest)];
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,38)
+		hlist_for_each_entry_rcu(node, head, hlist) {
+#else
 		hlist_for_each_entry_rcu(node, pos, head, hlist) {
+#endif
 			if(0 == memcmp(node->mac, eh->h_dest, ETH_ALEN)){
 				node->downbytes += skb->len;
 				if(node->downbytes > 1073741824){

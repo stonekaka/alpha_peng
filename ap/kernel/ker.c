@@ -30,7 +30,7 @@
 //#define NETLINK_TEST NETLINK_GENERIC
 #define MAX_MSGSIZE 1024
 int stringlength(char *s);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,38)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,66)
 void sendnlmsg(void * message, int len);
 #endif
 static int pid; // user process pid
@@ -148,7 +148,7 @@ static void timer_handler(unsigned long arg)
 				node->mac[0], node->mac[1], node->mac[2],node->mac[3], node->mac[4], node->mac[5]);
 				node->state = STATE_STALE;
 				m = build_sta_msg(node->mac, node->ipaddr, node->ifname, STA_TIMEOUT);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,38)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,66)
 				sendnlmsg(m, sizeof(struct msg_to_ker)+sizeof(struct sta_ctl));
 #endif
 				free_sta_msg(m);
@@ -157,7 +157,7 @@ static void timer_handler(unsigned long arg)
 				node->mac[0], node->mac[1], node->mac[2],node->mac[3], node->mac[4], node->mac[5], jiffies, node->max_time);
 				node->state = STATE_UNAUTH;
 				m = build_sta_msg(node->mac, node->ipaddr, node->ifname, STA_TIME_RUNOUT);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,38)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,66)
 				sendnlmsg(m, sizeof(struct msg_to_ker)+sizeof(struct sta_ctl));
 #endif
 			}else if((STATE_STALE == node->state) && (time_after(jiffies, node->timeout + 86400))){
@@ -174,7 +174,7 @@ static void timer_handler(unsigned long arg)
 	return;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,38)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,66)
 void sendnlmsg(void *message, int data_len)
 {
     struct sk_buff *skb_1;
@@ -225,7 +225,7 @@ int stringlength(char *s)
     return slen;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,38)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,66)
 void nl_data_ready(struct sk_buff *__skb)
 {
     struct sk_buff *skb;
@@ -556,14 +556,16 @@ unsigned int dmsniff(
 		eh->h_source[0],eh->h_source[1],eh->h_source[2],eh->h_source[3],eh->h_source[4],eh->h_source[5],
 		NIPQUAD(iph->saddr),  skb->dev->name);*/
 		m = build_sta_msg(eh->h_source, iph->saddr, idev->name, STA_INIT);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,38)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,66)
 		sendnlmsg(m, sizeof(struct msg_to_ker)+sizeof(struct sta_ctl));
 #endif		
 		free_sta_msg(m);
 	}else if(1 == found){
 		if(1 == need_reinit){
 			m = build_sta_msg(eh->h_source, iph->saddr, idev->name, STA_UPDATE_INIT);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,66)
 			sendnlmsg(m, sizeof(struct msg_to_ker)+sizeof(struct sta_ctl));
+#endif		
 			free_sta_msg(m);
 		}
 
@@ -634,13 +636,13 @@ dm_drop:
 	return NF_DROP;
 }
 
-#if 0
+#ifdef MODE_ROUTE 
 struct nf_hook_ops dmsniff_ops = {
     .hook = dmsniff,
     .pf = NFPROTO_IPV4,
     .hooknum = NF_INET_PRE_ROUTING,
     .priority = NF_IP_PRI_NAT_DST-2,
-}; 
+};
 
 struct nf_hook_ops dmacl_ops = {
     .hook = dmacl,
@@ -671,17 +673,23 @@ int dm_main_init(void)
 	nf_register_hook(&dmsniff_ops);
 	nf_register_hook(&dmacl_ops);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,38)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,3,8)
     nl_sk = netlink_kernel_create(&init_net, NETLINK_PENGWIFI, 1,
                                  nl_data_ready, NULL, THIS_MODULE);
+#else
+	struct netlink_kernel_cfg cfg = {
+		.input	= nl_data_ready,
+	};
 
+	nl_sk = netlink_kernel_create(&init_net, NETLINK_PENGWIFI, &cfg);
+
+#endif
     if(!nl_sk){
         printk(KERN_ERR "my_net_link: create netlink socket error.\n");
         return 1;
     }
 
     printk("pengwifi: create netlink socket ok.\n");
-#endif
 
 	rwlock_init(&g_table_lock);
 	
@@ -718,7 +726,7 @@ int dm_main_init(void)
 
 static void dm_main_exit(void)
 {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,38)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,66)
     if(nl_sk != NULL){
         netlink_kernel_release(nl_sk);
     }
