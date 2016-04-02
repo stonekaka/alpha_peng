@@ -40,7 +40,12 @@ int g_ap_flag = 1;
 #else
 int g_ap_flag = 0;
 #endif
+
+#ifdef MODEL_DMGROUTER
+int g_bridge_mode = 0;
+#else
 int g_bridge_mode = 1;
+#endif
 rwlock_t g_table_lock;
 struct hlist_head sta_table[STA_HASH_SIZE];
 struct timer_list sta_timer;
@@ -308,7 +313,7 @@ static __be32 get_lan_ipaddr(void)
 	struct in_device *ip;
 	struct in_ifaddr *in;
 	
-	if((dev = dev_get_by_name(&init_net, "br0")) == NULL){
+	if((dev = dev_get_by_name(&init_net, LAN_IFNAME)) == NULL){
 		printk("get lan addr error.\n");
 		return 0;
 	}
@@ -332,7 +337,7 @@ int is_daddr_local(__be32 daddr)
 	struct in_device *ip;
 	struct in_ifaddr *in;
 
-	if((dev = dev_get_by_name(&init_net, "br0")) == NULL){
+	if((dev = dev_get_by_name(&init_net, LAN_IFNAME)) == NULL){
 		printk("get dev br0 error.\n");
 		return 0;
 	}
@@ -636,7 +641,7 @@ dm_drop:
 	return NF_DROP;
 }
 
-#ifdef MODE_ROUTE 
+#ifdef MODEL_DMGROUTER
 struct nf_hook_ops dmsniff_ops = {
     .hook = dmsniff,
     .pf = NFPROTO_IPV4,

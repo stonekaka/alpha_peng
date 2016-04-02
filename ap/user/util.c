@@ -283,3 +283,36 @@ int get_file_md5(char *filename, char *md5, int len)
 	return 0;
 }
 #endif
+
+#ifdef MODEL_DMGROUTER
+int get_uci_opt_value(char *filename, char *section, char *option, char *value, int val_len)
+{
+	FILE *fp = NULL;
+	char cmd[256] = {0};
+	char buf[128] = {0};
+	
+	if(!filename || !section || !option || !value) {
+		printf("get uci opt v: arg error.");
+		return 1;
+	}
+	
+	snprintf(cmd, sizeof(cmd), "uci get %s.%s.%s >/dev/null 2>&1 "
+		"&& uci get %s.%s.%s", filename, section, option,
+		filename, section, option);
+	
+	fp = popen(cmd, "r");
+	if(NULL != fp){
+		fgets(buf, sizeof(buf), fp);	
+		clear_crlf(buf);
+		pclose(fp);
+		fp = NULL;
+		printf("get uci %s.%s.%s=%s.", filename, section, option, buf);
+		strncpy(value, buf, val_len < sizeof(buf)?val_len:sizeof(buf));
+	}else{
+		printf("read uci error.");
+	}
+	
+	return 0;
+}
+#endif
+

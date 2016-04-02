@@ -917,7 +917,7 @@ int main(int argc, char **argv)
 
 usage:
 	LOG_INFO("Usage: %s "
-				"<server address> [--port=<p>] "
+				"[-r <server address>] [--port=<p>] "
 				"[--ssl] [-k] [-v <ver>] "
 				"[-d <log bitfield>] [-l]\n", argv[0]);
 	dm_close_log();

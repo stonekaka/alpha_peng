@@ -1,12 +1,15 @@
 #export STAGING_DIR=/home/op/attitude_adjustment/staging_dir
 #include ../../../../libwebsockets/env.mk
 #include /home/op/gitlab/ezlink_api/build_patch/env.mk
-include /home/op/pengwifi/libwebsockets/env.mk.ap200
+include /home/op/pengwifi/libwebsockets/env.mk.dmgrouter2
 CFLAGS+=-Wall -pthread -DUSE_OPENSSL
 CFLAGS+=-I../../libwebsockets/
 LIB_DIR+=-L../../libwebsockets/
 
-AP200_XML=1
+#CFLAGS += -DMODEL_AP200
+CFLAGS += -DMODE_ROUTE -DMODEL_DMGROUTER
+
+AP200_XML=0
 ifeq ($(AP200_XML), 1)
 XML_SRC=$(TOP_DIR)/comlib/libxmldbc.c
 CFLAGS+= -DAP200_XML

@@ -13,10 +13,22 @@
 
 extern struct ssid_dev **g_ssid_dev;
 extern struct radio_config radio_2g, radio_5g;
+#ifdef MODEL_AP200
+
 char *g_wlan_ifname[MAX_WLAN_COUNT][2]={{"ath0","ath16"},{"ath1","ath17"},{"ath2","ath18"},{"ath3","ath19"},{"ath4","ath20"},{"ath5","ath21"}};
 
 #define SAVE_SET       "/etc/scripts/misc/profile.sh put"
 #define ACTIVE_SET     "submit WLAN"
+#endif
+
+#ifdef MODEL_DMGROUTER
+
+char *g_wlan_ifname[MAX_WLAN_COUNT][2]={{"ath0","ath6"},{"ath1","ath7"},{"ath2","ath8"},{"ath3","ath9"},{"ath4","ath10"},{"ath5","ath11"}};
+
+#define SAVE_SET       "uci commit"
+#define ACTIVE_SET     "/etc/init.d/network restart"
+
+#endif
 
 #define DM_SYSTEM(cmd) do{LOG_INFO(cmd);LOG_INFO("\n");system(cmd);}while(0)
 
@@ -33,7 +45,7 @@ int init_ssid_ifname(void)
 
 int get_wan_mac(char *mac, int len)
 {
-	char *cmd = "ifconfig br0 | grep HWaddr |awk '{print $5}' | tr '[A-Z]' '[a-z]'";
+	char *cmd = "ifconfig "WAN_IFNAME" | grep HWaddr |awk '{print $5}' | tr '[A-Z]' '[a-z]'";
 	FILE *fp = NULL;
 
 	fp = popen(cmd, "r");
@@ -50,7 +62,7 @@ int get_wan_mac(char *mac, int len)
 
 int get_wan_ip(char *ip, int len)
 {
-	char *cmd = "ifconfig br0 | grep \"inet addr\" |awk '{print $2}' | awk -F: '{print $2}'";
+	char *cmd = "ifconfig "WAN_IFNAME" | grep \"inet addr\" |awk '{print $2}' | awk -F: '{print $2}'";
 	FILE *fp = NULL;
 
 	fp = popen(cmd, "r");
@@ -85,8 +97,8 @@ int get_5g_dev_prefix(char *prefix, int len)
 
 int get_ap_label_mac(char *out, int outlen, int nocol)
 {
-	char *cmd = "ifconfig br0 | grep \"HWaddr\" | awk '{print $5}' | sed 's/://g' | tr '[A-Z]' '[a-z]'";
-	char *cmd2 = "ifconfig br0 | grep \"HWaddr\" | awk '{print $5}' | tr '[A-Z]' '[a-z]'";
+	char *cmd = "ifconfig "LABEL_IF" | grep \"HWaddr\" | awk '{print $5}' | sed 's/://g' | tr '[A-Z]' '[a-z]'";
+	char *cmd2 = "ifconfig "LABEL_IF" | grep \"HWaddr\" | awk '{print $5}' | tr '[A-Z]' '[a-z]'";
 	FILE *fp = NULL;
 	
 	if(!out){
@@ -134,6 +146,7 @@ int get_ap_label_mac(char *out, int outlen, int nocol)
 }*/
 
 
+#ifdef MODEL_AP200
 int exec_radio_config(void)
 {
 #define SET_2G "rgdb -s /wlan/inf:1/"		
@@ -229,7 +242,40 @@ int exec_radio_config(void)
 
 	return 0;
 }
+#endif
 
+#ifdef MODEL_DMGROUTER
+int exec_radio_config(void)
+{
+#define SET_2G "uci set wireless.wifi0."
+#define SET_5G "uci set wireless.wifi1."
+
+#define STR_DISABLED "disabled='1'"
+#define STR_ENABLED  "disabled='0'"
+
+	char enabled_str[64] = {0};
+	
+	if(1 == radio_2g.enabled){
+		snprintf(enabled_str, sizeof(enabled_str)-1, "%s%s", SET_2G, STR_ENABLED);
+		DM_SYSTEM(enabled_str);
+	}else{
+		snprintf(enabled_str, sizeof(enabled_str)-1, "%s%s", SET_2G, STR_DISABLED);
+		DM_SYSTEM(enabled_str);
+	}
+	
+	if(1 == radio_5g.enabled){
+		snprintf(enabled_str, sizeof(enabled_str)-1, "%s%s", SET_5G, STR_ENABLED);
+		DM_SYSTEM(enabled_str);
+	}else{
+		snprintf(enabled_str, sizeof(enabled_str)-1, "%s%s", SET_5G, STR_DISABLED);
+		DM_SYSTEM(enabled_str);
+	}
+	
+	return 0;
+}
+#endif
+
+#ifdef MODEL_AP200
 int translate_enctype(int input)
 {
 	int ret = 0;
@@ -242,7 +288,9 @@ int translate_enctype(int input)
 
 	return ret;
 }
+#endif
 
+#ifdef MODEL_AP200
 int exec_wlan_config(void)
 {
 #ifdef AP200_XML	
@@ -411,13 +459,94 @@ int exec_wlan_config(void)
 	
 	return ret;
 }
+#endif
 
+#ifdef MODEL_DMGROUTER
+int exec_wlan_config(void)
+{
+#define SET_WLAN_2G "uci set wireless.@wifi-iface[0]."
+#define SET_WLAN_5G "uci set wireless.@wifi-iface[1]."
+
+	char prefix[128] = {0};
+	char disable_str[128] = {0};
+	char ssid_str[128] = {0};
+	char hidden_str[128] = {0};
+	char enc_type_str[128] = {0};
+	char enc_value_str[128] = {0};
+	int radio_index = 0;
+	int i = 0;
+
+	LOG_INFO("start disable all ssid ...\n");
+	snprintf(disable_str, sizeof(disable_str)-1, "%s%s", SET_WLAN_2G, "ssid=''");
+	DM_SYSTEM(disable_str);
+	snprintf(disable_str, sizeof(disable_str)-1, "%s%s", SET_WLAN_5G, "ssid=''");
+	DM_SYSTEM(disable_str);
+	
+	LOG_INFO("start config ssid ...\n");
+	for(i = 0; i < MAX_WLAN_COUNT; i++){
+		memset(ssid_str, 0, sizeof(ssid_str));
+		memset(hidden_str, 0, sizeof(hidden_str));
+		memset(enc_type_str, 0, sizeof(enc_type_str));
+		memset(enc_value_str, 0, sizeof(enc_value_str));
+		radio_index = 0;
+		//"uci set wireless.@wifi-iface[1].ssid='DoMyGNet_9084_5G'"
+		if(g_ssid_dev[i]->ssid[0]){
+			if(0 == g_ssid_dev[i]->radio_type){
+				radio_index = 1;
+				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_2G);
+			}else{
+				radio_index = 2;
+				snprintf(prefix, sizeof(prefix)-1, SET_WLAN_5G);
+			}
+
+			/**do nothing if radio is disable**/
+			if((radio_index == 1 && !radio_2g.enabled) || (radio_index == 2 && !radio_5g.enabled)){
+				continue;
+			}
+
+			snprintf(ssid_str, sizeof(ssid_str)-1, "%sssid=\'%s\'", prefix, g_ssid_dev[i]->ssid);
+			snprintf(hidden_str, sizeof(hidden_str)-1, "%shidden=\'%d\'", prefix, g_ssid_dev[i]->hidden);
+
+			if(0 == g_ssid_dev[i]->enc_type){
+				snprintf(enc_type_str, sizeof(enc_type_str)-1, "%sencryption=none", prefix);
+				snprintf(enc_value_str, sizeof(enc_value_str)-1, "%skey=\'%s\'", prefix, g_ssid_dev[i]->enc_key);
+			}else{
+				snprintf(enc_type_str, sizeof(enc_type_str)-1, "%sencryption='psk2'", prefix);
+				snprintf(enc_value_str, sizeof(enc_value_str)-1, "%skey \'%s\'", prefix, g_ssid_dev[i]->enc_key);
+			}
+
+			DM_SYSTEM(ssid_str);
+			DM_SYSTEM(hidden_str);
+			DM_SYSTEM(enc_type_str);
+			DM_SYSTEM(enc_value_str);
+		}
+
+	}
+
+	DM_SYSTEM(SAVE_SET);
+	DM_SYSTEM(ACTIVE_SET);
+	LOG_INFO("end config ssid\n ");
+		
+	return 0;
+}
+#endif
+
+#ifdef MODEL_AP200
 int get_soft_version(char *ver, int len)
 {
 	//return get_string_from_cmd(ver, len, "cat /version/v.json | awk -F\\\" '{print $20}'");
 	return get_string_from_cmd(ver, len, "cat /etc/config/buildver | awk '{print $1}'");
 }
+#endif
 
+#ifdef MODEL_DMGROUTER
+int get_soft_version(char *ver, int len)
+{
+	return get_uci_opt_value("ezwrt", "sysinfo", "version", ver, len);
+}
+#endif
+
+#ifdef MODEL_AP200
 int exec_bandwidth_limit(void)
 {
 #define BW_SET_CMD "\
@@ -480,6 +609,15 @@ int exec_bandwidth_limit(void)
 
 	return 0;
 }
+#endif
+
+#ifdef MODEL_DMGROUTER
+int exec_bandwidth_limit(void)
+{
+
+	return 0;
+}
+#endif
 
 int get_ssid_status(char *ifname, struct ssid_status *node)
 {
@@ -555,7 +693,15 @@ int get_all_ssid_status(struct ssid_status *ssid_list)
 int fw_upgrade(char *url, char *md5)
 {
 #define FW_FILENAME	"/tmp/pwf_upgrade.bin"
+
+#ifdef MODEL_AP200
 #define FW_UPGRADE "cat "FW_FILENAME" > /dev/mtdblock/1 && echo \"1\">/proc/rebootm"
+#endif
+
+#ifdef MODEL_DMGROUTER
+#define FW_UPGRADE "sysupgrade "FW_FILENAME
+#endif
+
 	int ret = 0;
 	char smd5[64] = {0};
 	char cmd[128] = {0};

@@ -3,7 +3,7 @@
 #include /home/op/gitlab/ezlink_api/build_patch/env.mk
 include /home/op/pengwifi/libwebsockets/env.mk.dmgrouter2
 
-ccflags-y += -DMODE_ROUTE
+ccflags-y += -DMODEL_DMGROUTER
 
 pengwifi-objs = ker.o table.o pengwifi_proc.o acl.o
 

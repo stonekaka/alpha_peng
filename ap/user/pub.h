@@ -13,6 +13,18 @@
 #include <linux/if.h>
 #include <linux/if_ether.h>
 
+#ifdef MODEL_AP200
+#define WAN_IFNAME "br0"
+#define LABEL_IF "br0"
+#define LAN_IFNAME "br0"
+#endif
+
+#ifdef MODEL_DMGROUTER
+#define WAN_IFNAME "eth0"
+#define LABEL_IF "ath0"
+#define LAN_IFNAME "br-lan"
+#endif
+
 #define MAX_WLAN_COUNT  6
 
 #define MAX_DOMAIN_LEN 128
