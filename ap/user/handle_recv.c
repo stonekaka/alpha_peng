@@ -74,6 +74,37 @@ int enqueue_r_msg(char *msg)
 	return 0;
 }
 
+#ifdef MODEL_DMGROUTER
+int insert_weixin_to_portal(struct wlan_arg *wlans)
+{
+	int i = 0, j = 0;
+	int weixin_ip1[2] = {0};
+	int weixin_ip2[2] = {0};
+	int weixin_ip3[2] = {0};
+	char *weixin1 = "api.weixin.qq.com";
+	char *weixin2 = "wifi.weixin.qq.com";
+	char *weixin3 = "short.weixin.qq.com";
+
+	resolve_url(weixin1, weixin_ip1, 2);
+	resolve_url(weixin2, weixin_ip2, 2);
+	resolve_url(weixin3, weixin_ip3, 2);
+	
+	for(i = 0; i < MAX_WLAN_COUNT; i++){
+		
+		wlans[i].portal_ipaddr[2] = weixin_ip3[0];
+		wlans[i].portal_ipaddr[3] = weixin_ip3[1];
+		wlans[i].portal_ipaddr[4] = weixin_ip1[0];
+		wlans[i].portal_ipaddr[5] = weixin_ip1[1];
+		wlans[i].portal_ipaddr[6] = weixin_ip2[0];
+		wlans[i].portal_ipaddr[7] = weixin_ip2[1];
+	}
+
+
+
+	return 0;
+}
+#endif
+
 int fill_ssid_dev_shadow(void)
 {
 	int i = 0;
@@ -1052,6 +1083,10 @@ int build_ssid_dev_table(cJSON *json_data)
 
 		//printf("build ssid-dev: %d %s %s\n", json_number->valueint, g_ssid_dev[json_number->valueint - 1].ssid, g_ssid_dev[json_number->valueint - 1].dev);
 	}
+
+#ifdef MODEL_DMGROUTER
+	insert_weixin_to_portal(wlans);
+#endif
 
 	set_portal_nl(wlans);
 	print_ssid_dev(wlans);

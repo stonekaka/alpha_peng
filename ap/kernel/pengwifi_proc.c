@@ -301,7 +301,7 @@ static int sta_bw_open(struct inode *inode, struct file *filp)
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,31)
 	return single_open(filp, sta_bw_show, NULL);
 #else
-	return seq_open(filp, &sta_bw_ops);
+	return single_open(filp, sta_bw_show, NULL);
 #endif
 }
 
@@ -310,7 +310,7 @@ static int dn_bw_open(struct inode *inode, struct file *filp)
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,31)
 	return single_open(filp, dn_bw_show, NULL);
 #else
-	return seq_open(filp, &dn_bw_ops);
+	return single_open(filp, dn_bw_show, NULL);
 #endif
 }
 
