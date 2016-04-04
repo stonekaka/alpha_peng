@@ -238,6 +238,9 @@ void nl_data_ready(struct sk_buff *__skb)
     struct completion cmpl;
     skb = skb_get (__skb);
 	struct msg_to_ker *m;
+	void *v = NULL;
+	struct wlan_arg *w = NULL;
+	int i = 0;
     
     if(skb->len >= NLMSG_SPACE(0))
     {
@@ -287,16 +290,20 @@ void nl_data_ready(struct sk_buff *__skb)
 		}else if(M2K_DN_BLKWHT_CLEAR == m->type){
 			clear_dn_blk_wht();	
 		}else if(M2K_PORTAL_CONFIG == m->type){
-			struct wlan_arg w[MAX_WLAN_COUNT];
-			int i = 0;
-			
-			memcpy(w, m->value, sizeof(w));
-			for(i = 0; i < MAX_WLAN_COUNT; i++){
-				memcpy(wlans[i].portal_url, w[i].portal_url, sizeof(wlans[i].portal_url));
-				memcpy(wlans[i].portal_ipaddr, w[i].portal_ipaddr, sizeof(wlans[i].portal_ipaddr));
-				wlans[i].no_portal = w[i].no_portal;
-				wlans[i].max_time = w[i].max_time;
-				wlans[i].idle_timeout = w[i].idle_timeout;
+			v = kmalloc(sizeof(struct wlan_arg) * MAX_WLAN_COUNT, GFP_KERNEL);
+			if(!v){
+				printk("PORTAL_CONFIG kmalloc failed\n");	
+			}else{
+				memcpy(v, m->value, sizeof(struct wlan_arg) * MAX_WLAN_COUNT);
+				for(i = 0; i < MAX_WLAN_COUNT; i++){
+					w = v + i * sizeof(struct wlan_arg);
+					memcpy(wlans[i].portal_url, w->portal_url, sizeof(wlans[i].portal_url));
+					memcpy(wlans[i].portal_ipaddr, w->portal_ipaddr, sizeof(wlans[i].portal_ipaddr));
+					wlans[i].no_portal = w->no_portal;
+					wlans[i].max_time = w->max_time;
+					wlans[i].idle_timeout = w->idle_timeout;
+				}
+				kfree(v);
 			}
 		}else{
 			printk("kernel rcv other\n");	
