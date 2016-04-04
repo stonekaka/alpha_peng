@@ -183,7 +183,7 @@ int get_ssid_portal_by_dev(char *ssid, int slen, char *portal, int plen, char *d
 		if(strstr(g_ssid_dev_dev_shadow + i*len_dev, ifname)){
 			snprintf(ssid, slen, "%s", g_ssid_dev_ssid_shadow + i*len_ssid);
 			snprintf(portal, plen, "%s", g_ssid_dev_portal_url_shadow + i*len_portal_url);
-			printf("%s: get dev=%s, ssid=%s, portal_url=%s\n", __FUNCTION__, dev, ssid, portal);
+			//printf("%s: get dev=%s, ssid=%s, portal_url=%s\n", __FUNCTION__, dev, ssid, portal);
 			break;
 		}
 	}

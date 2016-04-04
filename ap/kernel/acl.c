@@ -149,11 +149,14 @@ unsigned int dmacl(
 	struct hlist_node *pos;
 	struct sta_info *node;
 	struct net_device *idev = NULL;
+	int i = 0;
+	int found = 0;
 
 	if(unlikely(!skb)) {
 		return NF_ACCEPT;
 	}
 
+#ifdef MODEL_AP200
 	if(!g_bridge_mode){
 		// check in_dev is br-lan
 		if(skb->dev && (0 != strncmp(skb->dev->name, "br", 2))) {
@@ -161,6 +164,7 @@ unsigned int dmacl(
 			return NF_ACCEPT;
 		}
 	}
+#endif	
 
 	eh = eth_hdr(skb);
 	if(!eh) {
@@ -210,20 +214,38 @@ unsigned int dmacl(
 	
 	if(0 == strncmp(idev->name, "eth", 3)){
 		read_lock(&g_table_lock);
+#ifdef MODEL_AP200
 		head = &sta_table[get_sta_hash(eh->h_dest)];
+#endif		
+#ifdef MODEL_DMGROUTER		
+		for(i = 0; i < STA_HASH_SIZE; i++) {
+			head = &sta_table[i];
+#endif			
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,38)
 		hlist_for_each_entry_rcu(node, head, hlist) {
 #else
 		hlist_for_each_entry_rcu(node, pos, head, hlist) {
 #endif
+			found = 0;
+#ifdef MODEL_AP200
 			if(0 == memcmp(node->mac, eh->h_dest, ETH_ALEN)){
+#endif
+#ifdef MODEL_DMGROUTER
+			if(node->ipaddr == iph->daddr){
+#endif
 				node->downbytes += skb->len;
 				if(node->downbytes > 1073741824){
 					node->downbytes = 0;
 					node->downbytes_g += 1;
 				}
+				found = 1;
 			}
+			if(found)break;
 		}
+#ifdef MODEL_DMGROUTER		
+			if(found)break;
+		}
+#endif
 		read_unlock(&g_table_lock);
 		return NF_ACCEPT;
 	}
@@ -277,6 +299,17 @@ unsigned int dmacl(
 		}
 	}
 	read_unlock(&g_table_lock);
+
+#ifdef MODEL_DMGROUTER
+	if(!g_bridge_mode){
+		// check in_dev is br-lan
+		if(skb->dev && (0 != strncmp(skb->dev->name, "br", 2))) {
+			//printk("dev=%s\n", skb->dev->name);
+			return NF_ACCEPT;
+		}
+	}
+#endif	
+
 	return ret;
 }
 
