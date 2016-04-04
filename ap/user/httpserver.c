@@ -35,6 +35,7 @@
 extern struct ssid_dev **g_ssid_dev;
 extern char g_ap_label_mac_nocol[];
 //extern char g_auth_code[];
+extern char *g_wlan_ifname[MAX_WLAN_COUNT][2];
 
 extern caddr_t g_state_shadow;
 extern caddr_t g_acname_shadow;
@@ -43,6 +44,57 @@ extern caddr_t g_auth_code_shadow;
 extern caddr_t g_ssid_dev_dev_shadow;
 extern caddr_t g_ssid_dev_ssid_shadow;
 extern caddr_t g_ssid_dev_portal_url_shadow;
+
+#ifdef MODEL_DMGROUTER
+/*qsdk: get athx by mac, use wlanconfig*/
+int get_wifidev_by_mac(char *mac, char *dev, int devlen)
+{
+	char *fmt = " wlanconfig %s list | grep -v ADDR | awk '{print $1}'";
+	char cmd[256] = {0};
+	char buf[128] = {0};
+	FILE *fp = NULL;
+	int i = 0, j = 0;
+	int found = 0;
+
+	if(!mac || !dev || !devlen){
+		printf("%d:Error: bad arg\n", __LINE__);
+		return -1;
+	}
+
+	for(i = 0; i < MAX_WLAN_COUNT; i++){
+		found = 0;
+		for(j = 0; j < 2; j++){
+			found = 0;
+			snprintf(cmd, sizeof(cmd) - 1, fmt, g_wlan_ifname[i][j]);
+			fp = popen(cmd, "r");
+			if(!fp){
+				LOG_INFO("%s:Error: exec: %s \n", __FUNCTION__, cmd);
+				continue;
+			}
+			
+			while(fgets(buf, sizeof(buf) - 1, fp)){
+				clear_crlf(buf);
+				if(0 == strncmp(mac, buf, strlen(mac))){
+					snprintf(dev, devlen, "%s", g_wlan_ifname[i][j]);
+					found = 1;
+					break;
+				}
+			}
+			
+			pclose(fp);
+			if(found){
+				break;
+			}
+		}
+
+		if(found){
+			break;
+		}
+	}
+	
+	return 0;
+}
+#endif
 
 int get_user_mac_dev_by_ip(char *ip, char *mac, int maclen, char *dev, int devlen)
 {
@@ -73,9 +125,14 @@ int get_user_mac_dev_by_ip(char *ip, char *mac, int maclen, char *dev, int devle
 		}
 	}
 	
-	//printf("%s: ip=%s, mac=%s, dev=%s\n", __FUNCTION__, ip, mac, dev);
-
 	pclose(fp);
+
+#ifdef MODEL_DMGROUTER
+	/*qsdk: get athx by mac, use wlanconfig*/
+	get_wifidev_by_mac(mac, dev, devlen);
+#endif	
+
+	//printf("%s: ip=%s, mac=%s, dev=%s\n", __FUNCTION__, ip, mac, dev);
 
 	return 0;
 }

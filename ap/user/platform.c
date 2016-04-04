@@ -23,7 +23,7 @@ char *g_wlan_ifname[MAX_WLAN_COUNT][2]={{"ath0","ath16"},{"ath1","ath17"},{"ath2
 
 #ifdef MODEL_DMGROUTER
 
-char *g_wlan_ifname[MAX_WLAN_COUNT][2]={{"ath0","ath6"},{"ath1","ath7"},{"ath2","ath8"},{"ath3","ath9"},{"ath4","ath10"},{"ath5","ath11"}};
+char *g_wlan_ifname[MAX_WLAN_COUNT][2]={{"ath0","ath1"},{"ath1","ath7"},{"ath2","ath8"},{"ath3","ath9"},{"ath4","ath10"},{"ath5","ath11"}};
 
 #define SAVE_SET       "uci commit"
 #define ACTIVE_SET     "/etc/init.d/network restart"
@@ -37,7 +37,12 @@ int init_ssid_ifname(void)
 	int i = 0;
 
 	for(i = 0; i < MAX_WLAN_COUNT; i++) {
+#ifdef MODEL_AP200	
 		snprintf(g_ssid_dev[i]->dev, sizeof(g_ssid_dev[i]->dev)-1, "ath%d_ath%d_", i, i+16);
+#endif		
+#ifdef MODEL_DMGROUTER
+		snprintf(g_ssid_dev[i]->dev, sizeof(g_ssid_dev[i]->dev)-1, "%s_%s_", g_wlan_ifname[i][0], g_wlan_ifname[i][1]);
+#endif		
 	}	
 
 	return 0;

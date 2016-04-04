@@ -26,6 +26,7 @@ int get_hash_by_mac(const char *addr, unsigned int *hash);
 void init_daemon(void);
 int get_string_from_cmd(char *result, int len, char *cmd);
 int get_int_from_cmd(int *result, char *cmd);
+int get_uci_opt_value(char *filename, char *section, char *option, char *value, int val_len);
 
 #endif
 
