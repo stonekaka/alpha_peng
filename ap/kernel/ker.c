@@ -162,6 +162,7 @@ static void timer_handler(unsigned long arg)
 #endif
 			}else if((STATE_STALE == node->state) && (time_after(jiffies, node->timeout + 86400))){
 				hlist_del_init_rcu(&node->hlist);
+				kfree(node);
 			}
 		}
 	}
