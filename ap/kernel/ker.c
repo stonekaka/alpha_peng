@@ -125,9 +125,10 @@ static void timer_handler(unsigned long arg)
 	unsigned long now, next;
 	struct hlist_head *head;
 	struct hlist_node *pos;
-	struct sta_info *node;
+	struct sta_info *node, *inode;
 	struct msg_to_ker *m;
 	int i = 0;
+	LIST_HEAD(free_list);
 
 	write_lock(&g_table_lock);
 	for(i = 0; i < STA_HASH_SIZE; i++){
@@ -162,11 +163,17 @@ static void timer_handler(unsigned long arg)
 #endif
 			}else if((STATE_STALE == node->state) && (time_after(jiffies, node->timeout + 86400))){
 				hlist_del_init_rcu(&node->hlist);
-				kfree(node);
+				list_add(&node->free_sta_list, &free_list);
+				//if(node)kfree(node);
 			}
 		}
 	}
 	write_unlock(&g_table_lock);
+
+	list_for_each_entry_safe(node, inode, &free_list, free_sta_list){
+		list_del(&node->free_sta_list);
+		kfree(node);
+	}
 
 	now = jiffies;
 	next = jiffies + 5 * HZ;
